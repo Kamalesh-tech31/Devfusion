@@ -11,20 +11,22 @@ import {
 export default function InventoryRestockPage() {
   const router = useRouter();
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
-  const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [selectedId, setSelectedId] = useState<string>("");
   const [addAmount, setAddAmount] = useState(0);
 
   useEffect(() => {
     const stored = getInventory();
     setInventory(stored);
-    setSelectedId(stored[0]?.id ?? null);
+    setSelectedId(stored[0]?.id ? String(stored[0].id) : "");
   }, []);
 
   function handleRestock() {
-    if (!selectedId || addAmount <= 0) return;
+    if (selectedId === "" || addAmount <= 0) return;
+
+    const idNum = Number(selectedId);
 
     const updated = inventory.map((item) =>
-      item.id === selectedId
+      item.id === idNum
         ? {
             ...item,
             stock: item.stock + addAmount,
@@ -37,7 +39,7 @@ export default function InventoryRestockPage() {
     router.push("/owner/inventory");
   }
 
-  const selectedItem = inventory.find((item) => item.id === selectedId);
+  const selectedItem = inventory.find((item) => item.id === Number(selectedId));
 
   return (
     <div className="p-8">
@@ -46,12 +48,15 @@ export default function InventoryRestockPage() {
       <div className="space-y-4 max-w-md">
         <label className="block text-gray-400">Select product</label>
         <select
-          value={selectedId ?? undefined}
-          onChange={(e) => setSelectedId(Number(e.target.value))}
+          value={selectedId != null ? String(selectedId) : ""}
+          onChange={(e) => setSelectedId(e.target.value)}
           className="w-full bg-[#111111] border border-[#2A2A2A] rounded-2xl px-4 py-3 text-white outline-none"
         >
+          <option value="" disabled>
+            -- Select product --
+          </option>
           {inventory.map((item) => (
-            <option key={item.id} value={item.id}>
+            <option key={item.id} value={String(item.id)}>
               {item.product} ({item.sku})
             </option>
           ))}
