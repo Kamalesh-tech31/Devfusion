@@ -1,0 +1,133 @@
+"use client";
+
+import { useState } from "react";
+import { BriefcaseBusiness, Truck, User, ArrowRight } from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+
+export default function LoginPage() {
+  const router = useRouter();
+  const [selectedRole, setSelectedRole] = useState("Business Owner");
+
+  const roles = [
+    {
+      name: "Business Owner",
+      icon: BriefcaseBusiness,
+    },
+    {
+      name: "Delivery Agent",
+      icon: Truck,
+    },
+    {
+      name: "Customer",
+      icon: User,
+    },
+  ];
+
+  return (
+    <main className="min-h-screen bg-[#0B0B0B] text-white flex items-center justify-center px-4">
+      <div className="w-full max-w-md bg-[#111111]/80 backdrop-blur-xl border border-[#7F1D1D]/20 rounded-3xl p-8 shadow-[0_0_40px_rgba(127,29,29,0.15)]">
+        {/* Logo */}
+        <div className="text-center mb-10">
+          <h1 className="text-5xl font-bold tracking-tight">
+            Logi<span className="text-[#7F1D1D]">Track</span>
+          </h1>
+
+          <p className="text-gray-400 mt-3 text-sm">
+            Smart Supply Chain & Delivery Platform
+          </p>
+        </div>
+
+        {/* Form */}
+        <form className="space-y-6">
+          {/* Email */}
+          <div>
+            <label className="block text-sm mb-2 text-gray-300">Email</label>
+
+            <input
+              type="email"
+              placeholder="admin@logitrack.com"
+              className="w-full bg-[#1A1A1A] border border-[#2A2A2A] rounded-2xl px-4 py-4 outline-none text-white placeholder:text-gray-500 focus:border-[#7F1D1D] focus:ring-2 focus:ring-[#7F1D1D]/30 transition-all"
+            />
+          </div>
+
+          {/* Password */}
+          <div>
+            <label className="block text-sm mb-2 text-gray-300">Password</label>
+
+            <input
+              type="password"
+              placeholder="••••••••"
+              className="w-full bg-[#1A1A1A] border border-[#2A2A2A] rounded-2xl px-4 py-4 outline-none text-white placeholder:text-gray-500 focus:border-[#7F1D1D] focus:ring-2 focus:ring-[#7F1D1D]/30 transition-all"
+            />
+          </div>
+
+          {/* Role Selection */}
+          <div>
+            <label className="block text-sm mb-3 text-gray-300">Login As</label>
+
+            <div className="space-y-3">
+              {roles.map((role) => {
+                const Icon = role.icon;
+                const active = selectedRole === role.name;
+
+                return (
+                  <button
+                    type="button"
+                    key={role.name}
+                    onClick={() => setSelectedRole(role.name)}
+                    className={`w-full flex items-center justify-between p-4 rounded-2xl border transition-all duration-300
+                      
+                      ${
+                        active
+                          ? "border-[#7F1D1D] bg-[#161616] shadow-[0_0_20px_rgba(127,29,29,0.25)]"
+                          : "border-[#262626] bg-[#121212] hover:border-[#7F1D1D]/60 hover:bg-[#161616]"
+                      }
+                    `}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div
+                        className={`p-2 rounded-xl ${
+                          active ? "bg-[#7F1D1D]/20" : "bg-[#1E1E1E]"
+                        }`}
+                      >
+                        <Icon size={20} />
+                      </div>
+
+                      <span className="font-medium">{role.name}</span>
+                    </div>
+
+                    {active && (
+                      <div className="w-2 h-2 rounded-full bg-[#7F1D1D]" />
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Login Button */}
+          <button
+            type="button"
+            onClick={() => router.push("/owner")}
+            className="w-full bg-[#7F1D1D] hover:bg-[#991B1B] transition-all duration-300 rounded-2xl py-4 flex items-center justify-center gap-2 text-white font-semibold text-lg"
+          >
+            Sign In
+            <ArrowRight size={18} />
+          </button>
+
+          {/* Footer */}
+          <p className="text-gray-400 text-sm text-center mt-6">
+            Don&apos;t have an account?{" "}
+            <Link
+              href="/register"
+              className="text-[#7F1D1D] hover:text-[#991B1B] transition"
+            >
+              Register
+            </Link>
+          </p>
+        </form>
+      </div>
+    </main>
+  );
+}
