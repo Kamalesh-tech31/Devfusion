@@ -6,7 +6,50 @@ import { useRouter } from "next/navigation";
 
 export default function RegisterPage() {
   const router = useRouter();
+
+  const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [selectedRole, setSelectedRole] = useState("Business Owner");
+
+  const handleRegister = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+
+    if (password !== confirmPassword) {
+      alert("Passwords do not match");
+      return;
+    }
+
+    try {
+      const response = await fetch("http://localhost:5000/api/auth/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          fullName,
+          email,
+          password,
+          role: selectedRole,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        alert(data.message);
+        return;
+      }
+
+      alert("Registration Successful");
+
+      router.push("/login");
+    } catch (error) {
+      console.log(error);
+      alert("Something went wrong");
+    }
+  };
 
   return (
     <main className="min-h-screen bg-[#0B0B0B] flex items-center justify-center px-4 py-10">
@@ -14,7 +57,8 @@ export default function RegisterPage() {
         {/* Logo */}
         <div className="text-center mb-10">
           <h1 className="text-5xl font-bold text-white tracking-tight">
-            Logi<span className="text-[#7F1D1D]">Track</span>
+            Logi
+            <span className="text-[#7F1D1D]">Track</span>
           </h1>
 
           <p className="text-gray-400 mt-3 text-sm">
@@ -23,8 +67,8 @@ export default function RegisterPage() {
         </div>
 
         {/* Form */}
-        <form className="space-y-6">
-          {/* Name */}
+        <form onSubmit={handleRegister} className="space-y-6">
+          {/* Full Name */}
           <div>
             <label className="text-gray-300 text-sm block mb-2">
               Full Name
@@ -33,6 +77,8 @@ export default function RegisterPage() {
             <input
               type="text"
               placeholder="Enter your full name"
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
               className="w-full bg-black/40 border border-gray-700 focus:border-[#7F1D1D] rounded-2xl px-5 py-4 text-white outline-none transition"
             />
           </div>
@@ -46,19 +92,8 @@ export default function RegisterPage() {
             <input
               type="email"
               placeholder="Enter your email"
-              className="w-full bg-black/40 border border-gray-700 focus:border-[#7F1D1D] rounded-2xl px-5 py-4 text-white outline-none transition"
-            />
-          </div>
-
-          {/* Phone */}
-          <div>
-            <label className="text-gray-300 text-sm block mb-2">
-              Phone Number
-            </label>
-
-            <input
-              type="text"
-              placeholder="Enter your phone number"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               className="w-full bg-black/40 border border-gray-700 focus:border-[#7F1D1D] rounded-2xl px-5 py-4 text-white outline-none transition"
             />
           </div>
@@ -70,6 +105,8 @@ export default function RegisterPage() {
             <input
               type="password"
               placeholder="Create password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
               className="w-full bg-black/40 border border-gray-700 focus:border-[#7F1D1D] rounded-2xl px-5 py-4 text-white outline-none transition"
             />
           </div>
@@ -83,6 +120,8 @@ export default function RegisterPage() {
             <input
               type="password"
               placeholder="Confirm password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
               className="w-full bg-black/40 border border-gray-700 focus:border-[#7F1D1D] rounded-2xl px-5 py-4 text-white outline-none transition"
             />
           </div>
@@ -105,6 +144,7 @@ export default function RegisterPage() {
                 }`}
               >
                 <BriefcaseBusiness className="mx-auto mb-2 text-white" />
+
                 <p className="text-sm text-white">Business</p>
               </button>
 
@@ -119,6 +159,7 @@ export default function RegisterPage() {
                 }`}
               >
                 <Truck className="mx-auto mb-2 text-white" />
+
                 <p className="text-sm text-white">Delivery</p>
               </button>
 
@@ -133,63 +174,15 @@ export default function RegisterPage() {
                 }`}
               >
                 <User className="mx-auto mb-2 text-white" />
+
                 <p className="text-sm text-white">Customer</p>
               </button>
             </div>
           </div>
 
-          {/* Dynamic Fields */}
-
-          {selectedRole === "Business Owner" && (
-            <div className="space-y-4">
-              <input
-                type="text"
-                placeholder="Business Name"
-                className="w-full bg-black/40 border border-gray-700 focus:border-[#7F1D1D] rounded-2xl px-5 py-4 text-white outline-none"
-              />
-
-              <input
-                type="text"
-                placeholder="GST Number"
-                className="w-full bg-black/40 border border-gray-700 focus:border-[#7F1D1D] rounded-2xl px-5 py-4 text-white outline-none"
-              />
-
-              <textarea
-                placeholder="Business Address"
-                className="w-full bg-black/40 border border-gray-700 focus:border-[#7F1D1D] rounded-2xl px-5 py-4 text-white outline-none"
-              />
-            </div>
-          )}
-
-          {selectedRole === "Delivery Agent" && (
-            <div className="space-y-4">
-              <input
-                type="text"
-                placeholder="Vehicle Type"
-                className="w-full bg-black/40 border border-gray-700 focus:border-[#7F1D1D] rounded-2xl px-5 py-4 text-white outline-none"
-              />
-
-              <input
-                type="text"
-                placeholder="License Number"
-                className="w-full bg-black/40 border border-gray-700 focus:border-[#7F1D1D] rounded-2xl px-5 py-4 text-white outline-none"
-              />
-            </div>
-          )}
-
-          {selectedRole === "Customer" && (
-            <div>
-              <textarea
-                placeholder="Delivery Address"
-                className="w-full bg-black/40 border border-gray-700 focus:border-[#7F1D1D] rounded-2xl px-5 py-4 text-white outline-none"
-              />
-            </div>
-          )}
-
           {/* Submit Button */}
           <button
             type="submit"
-            onClick={() => router.push("/owner")}
             className="w-full bg-[#7F1D1D] hover:bg-[#991B1B] transition-all py-4 rounded-2xl text-white font-semibold flex items-center justify-center gap-2 shadow-lg shadow-[#7F1D1D]/20"
           >
             Create Account

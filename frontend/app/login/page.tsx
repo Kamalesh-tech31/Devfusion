@@ -8,6 +8,8 @@ import { useRouter } from "next/navigation";
 export default function LoginPage() {
   const router = useRouter();
   const [selectedRole, setSelectedRole] = useState("Business Owner");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
 
   const roles = [
     {
@@ -23,6 +25,41 @@ export default function LoginPage() {
       icon: User,
     },
   ];
+
+  const handleLogin = async () => {
+    try {
+      const res = await fetch("http://localhost:5000/api/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email,
+          password,
+          role: selectedRole,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        localStorage.setItem("token", data.token);
+
+        if (selectedRole === "Business Owner") {
+          router.push("/owner");
+        } else if (selectedRole === "Customer") {
+          router.push("/customer");
+        } else {
+          router.push("/delivery");
+        }
+      } else {
+        alert(data.message);
+      }
+    } catch (error) {
+      console.log(error);
+      alert("Server Error");
+    }
+  };
 
   return (
     <main className="min-h-screen bg-[#0B0B0B] text-white flex items-center justify-center px-4">
@@ -46,6 +83,8 @@ export default function LoginPage() {
 
             <input
               type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               placeholder="admin@logitrack.com"
               className="w-full bg-[#1A1A1A] border border-[#2A2A2A] rounded-2xl px-4 py-4 outline-none text-white placeholder:text-gray-500 focus:border-[#7F1D1D] focus:ring-2 focus:ring-[#7F1D1D]/30 transition-all"
             />
@@ -57,6 +96,8 @@ export default function LoginPage() {
 
             <input
               type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
               className="w-full bg-[#1A1A1A] border border-[#2A2A2A] rounded-2xl px-4 py-4 outline-none text-white placeholder:text-gray-500 focus:border-[#7F1D1D] focus:ring-2 focus:ring-[#7F1D1D]/30 transition-all"
             />
@@ -70,14 +111,12 @@ export default function LoginPage() {
               {roles.map((role) => {
                 const Icon = role.icon;
                 const active = selectedRole === role.name;
-
                 return (
                   <button
                     type="button"
                     key={role.name}
                     onClick={() => setSelectedRole(role.name)}
                     className={`w-full flex items-center justify-between p-4 rounded-2xl border transition-all duration-300
-                      
                       ${
                         active
                           ? "border-[#7F1D1D] bg-[#161616] shadow-[0_0_20px_rgba(127,29,29,0.25)]"
@@ -109,7 +148,7 @@ export default function LoginPage() {
           {/* Login Button */}
           <button
             type="button"
-            onClick={() => router.push("/owner")}
+            onClick={handleLogin}
             className="w-full bg-[#7F1D1D] hover:bg-[#991B1B] transition-all duration-300 rounded-2xl py-4 flex items-center justify-center gap-2 text-white font-semibold text-lg"
           >
             Sign In
