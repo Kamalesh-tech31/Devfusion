@@ -1,7 +1,7 @@
 "use client";
 
 import { Agent } from "@/lib/dashboardData";
-import { MapPin, Truck } from "lucide-react";
+import { MapPin, Truck, Sparkles } from "lucide-react";
 
 interface DeliveryMapProps {
   agents?: Agent[];
@@ -9,78 +9,141 @@ interface DeliveryMapProps {
 
 export default function DeliveryMap({ agents = [] }: DeliveryMapProps) {
   const markers = [
-    { id: 1, label: "Hub", top: "18%", left: "20%", color: "bg-green-400" },
+    {
+      id: 1,
+      label: "Distribution Hub",
+      topClass: "top-[18%] left-[22%]",
+      color: "bg-emerald-400",
+      subtitle: "Dispatch center",
+    },
     {
       id: 2,
-      label: "Warehouse",
-      top: "42%",
-      left: "54%",
+      label: "Urban Warehouse",
+      topClass: "top-[45%] left-[55%]",
       color: "bg-rose-400",
+      subtitle: "Loading zone",
     },
-    { id: 3, label: "Client", top: "68%", left: "30%", color: "bg-blue-400" },
+    {
+      id: 3,
+      label: "Delivery Point",
+      topClass: "top-[72%] left-[35%]",
+      color: "bg-sky-400",
+      subtitle: "Client location",
+    },
+  ];
+
+  const routeDots = [
+    { id: 1, top: "24%", left: "30%" },
+    { id: 2, top: "38%", left: "42%" },
+    { id: 3, top: "52%", left: "48%" },
+    { id: 4, top: "62%", left: "40%" },
   ];
 
   return (
-    <div className="bg-[#111111] border border-[#1F1F1F] rounded-3xl p-6">
-      <div className="flex items-center justify-between mb-4">
+    <div className="rounded-3xl border border-[#1F1F1F] bg-[#111111] p-6 shadow-xl shadow-black/20">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6">
         <div>
           <h2 className="text-2xl font-bold text-white">Route Optimisation</h2>
-          <p className="text-gray-400 text-sm">Live delivery tracking map</p>
+          <p className="text-neutral-400 text-sm mt-1">
+            Live delivery tracking map
+          </p>
         </div>
-        <div className="px-4 py-2 rounded-xl bg-[#7F1D1D]/20 border border-[#7F1D1D] text-[#EF4444] text-sm">
+
+        <div className="inline-flex items-center gap-2 rounded-2xl border border-[#7F1D1D] bg-[#7F1D1D]/10 px-4 py-2 text-sm text-red-300">
+          <span className="inline-flex h-2.5 w-2.5 rounded-full bg-red-400 animate-pulse" />
           {agents.length} Active Agents
         </div>
       </div>
 
-      <div className="relative h-[420px] rounded-3xl overflow-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 border border-[#1F1F1F]">
-        <div className="absolute inset-0 opacity-20 bg-[radial-gradient(circle_at_40%_30%,rgba(255,255,255,0.12),transparent_30%),radial-gradient(circle_at_70%_70%,rgba(239,68,68,0.12),transparent_24%)]" />
+      <div className="relative h-115 overflow-hidden rounded-3xl bg-linear-to-br from-slate-950 via-slate-900 to-slate-800 border border-[#1F1F1F]">
+        <div className="absolute inset-0 opacity-25 bg-[radial-gradient(circle_at_20%_20%,rgba(56,189,248,0.18),transparent_24%),radial-gradient(circle_at_85%_80%,rgba(239,68,68,0.18),transparent_24%)]" />
+        <div className="absolute inset-0 opacity-15 bg-[linear-gradient(90deg,rgba(255,255,255,0.08)_0%,transparent_20%,transparent_80%,rgba(255,255,255,0.08)_100%)]" />
 
         <svg
-          className="absolute inset-0 w-full h-full"
+          className="absolute inset-0 h-full w-full"
           viewBox="0 0 100 100"
           preserveAspectRatio="none"
         >
+          <defs>
+            <linearGradient id="routeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#F87171" stopOpacity="1" />
+              <stop offset="100%" stopColor="#60A5FA" stopOpacity="1" />
+            </linearGradient>
+          </defs>
           <path
-            d="M 18 20 Q 35 30 40 45 T 55 65 Q 68 75 80 70"
+            d="M 20 18 C 32 26 38 40 50 48 C 62 56 66 62 74 68 C 82 74 88 72 92 70"
             fill="none"
-            stroke="#ef4444"
-            strokeWidth="1.5"
-            strokeDasharray="4 4"
+            stroke="url(#routeGrad)"
+            strokeWidth="1.8"
+            strokeDasharray="5 5"
           />
-          <path d="M 22 18 L 18 20 L 22 22" fill="#ef4444" />
-          <path d="M 80 70 L 84 68 L 82 72" fill="#ef4444" />
+          <path d="M 20 18 L 17 22 L 23 22 Z" fill="#F87171" />
+          <path d="M 92 70 L 88 67 L 90 73 Z" fill="#60A5FA" />
+          {routeDots.map((dot) => (
+            <circle
+              key={dot.id}
+              cx={parseFloat(dot.left)}
+              cy={parseFloat(dot.top)}
+              r="1.1"
+              fill="#FBBF24"
+            />
+          ))}
         </svg>
 
-        {markers.map((marker) => (
+        {markers.map((marker, index) => (
           <div
             key={marker.id}
-            className={`absolute rounded-full p-3 shadow-xl ${marker.color} text-slate-950 flex items-center justify-center`}
-            style={{
-              top: marker.top,
-              left: marker.left,
-              transform: "translate(-50%, -50%)",
-            }}
+            className={`absolute ${marker.topClass} ${marker.color} z-10 flex flex-col items-center gap-2 rounded-full px-3 py-3 shadow-2xl text-slate-950 ${
+              index === 0 ? "animate-pulse" : ""
+            }`}
           >
-            <MapPin size={18} aria-hidden="true" />
+            <span className="flex h-11 w-11 items-center justify-center rounded-full bg-slate-950/10 shadow-inner">
+              <MapPin size={18} aria-hidden="true" />
+            </span>
+            <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-950">
+              {marker.label}
+            </span>
           </div>
         ))}
 
-        <div className="absolute bottom-6 right-6 rounded-3xl bg-[#0B0B0B]/95 border border-[#1F1F1F] p-4 w-64 shadow-xl">
-          <p className="text-sm text-neutral-400">Currently tracking</p>
-          <div className="mt-3 space-y-3">
-            {agents.slice(0, 3).map((agent) => (
-              <div key={agent.id} className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-2xl bg-[#7F1D1D] flex items-center justify-center text-white">
-                  <Truck size={16} />
-                </div>
-                <div>
-                  <p className="text-white font-semibold">{agent.name}</p>
-                  <p className="text-xs text-neutral-500">
-                    {agent.status} · {agent.deliveries} deliveries
-                  </p>
-                </div>
-              </div>
-            ))}
+        <div className="absolute top-6 right-6 rounded-3xl border border-white/10 bg-[#0B0B0B]/90 p-4 text-white shadow-xl shadow-black/30 backdrop-blur-sm">
+          <div className="flex items-center gap-2 text-xs text-neutral-400">
+            <span className="inline-flex h-2.5 w-2.5 rounded-full bg-emerald-400 animate-pulse" />
+            Dispatch live
+          </div>
+          <div className="mt-3 flex items-center gap-2 text-xs text-neutral-400">
+            <span className="inline-flex h-2.5 w-2.5 rounded-full bg-amber-400" />
+            Route traffic moderate
+          </div>
+        </div>
+
+        <div className="absolute bottom-6 left-6 rounded-3xl border border-white/10 bg-[#0B0B0B]/92 p-4 shadow-2xl shadow-black/30 backdrop-blur-sm w-72">
+          <div className="flex items-center gap-3">
+            <div className="grid h-11 w-11 place-items-center rounded-2xl bg-red-600 text-white">
+              <Truck size={18} />
+            </div>
+            <div>
+              <p className="text-sm text-neutral-400">Most active route</p>
+              <p className="text-white font-semibold">
+                East Zone — 8 stops remaining
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-4 flex items-center gap-2 rounded-full bg-white/5 px-3 py-2 text-xs text-neutral-300">
+            <Sparkles size={14} />
+            <span>Speed advantage +12% vs last week</span>
+          </div>
+
+          <div className="mt-4 grid grid-cols-2 gap-3 text-sm text-neutral-400">
+            <div>
+              <p className="text-white font-semibold">14 min</p>
+              <p className="mt-1">Avg delay</p>
+            </div>
+            <div>
+              <p className="text-white font-semibold">3</p>
+              <p className="mt-1">Traffic alerts</p>
+            </div>
           </div>
         </div>
       </div>
