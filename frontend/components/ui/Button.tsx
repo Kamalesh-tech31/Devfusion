@@ -2,17 +2,25 @@
 
 import React from "react";
 
-interface ButtonProps {
+interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   children: React.ReactNode;
 }
 
-const Button = ({ children }: ButtonProps) => {
+const Button = ({
+  children,
+  className = "",
+  type = "button",
+  ...props
+}: ButtonProps) => {
   return (
     <button
-      className="
+      type={type}
+      className={`
         bg-[#7F1D1D]
         hover:bg-[#991B1B]
         active:scale-95
+        disabled:cursor-not-allowed
+        disabled:bg-[#4C1D1D]
         transition-all
         duration-150
         px-4
@@ -23,7 +31,9 @@ const Button = ({ children }: ButtonProps) => {
         cursor-pointer
         shadow-lg
         shadow-black/30
-      "
+        ${className}
+      `}
+      {...props}
     >
       {children}
     </button>

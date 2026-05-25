@@ -1,111 +1,314 @@
 "use client";
 
 import { useState } from "react";
+import toast from "react-hot-toast";
 
 import Navbar from "@/components/common/Navbar";
 import Sidebar from "@/components/common/Sidebar";
+import { deliveryRecords } from "@/components/delivery/deliveryData";
 import Button from "@/components/ui/Button";
 
+interface LocationDetails {
+  displayName: string;
+  formattedAddress: string;
+  city: string;
+  state: string;
+  country: string;
+  postalCode: string;
+  latitude: number;
+  longitude: number;
+  source: "manual" | "browser";
+  timestamp: string;
+}
+
 export default function TrackingPage() {
-  const [latitude, setLatitude] =
-    useState("");
+  const [latitude, setLatitude] = useState("");
+  const [longitude, setLongitude] = useState("");
+  const [locationDetails, setLocationDetails] = useState<LocationDetails | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const [longitude, setLongitude] =
-    useState("");
+  const activeRoute = deliveryRecords[0];
 
-  const [submitted, setSubmitted] =
-    useState(false);
+  const resolveLocation = async (
+    lat: number,
+    lon: number,
+    source: "manual" | "browser"
+  ) => {
+    setIsLoading(true);
 
-  const handleUpdate = () => {
-    setSubmitted(true);
+    try {
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}`,
+        {
+          headers: {
+            Accept: "application/json",
+            "User-Agent": "Devfusion-LogiTrack/1.0",
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Reverse geocoding request failed");
+      }
+
+      const data = (await response.json()) as {
+        display_name?: string;
+        address?: {
+          city?: string;
+          town?: string;
+          village?: string;
+          state?: string;
+          country?: string;
+          postcode?: string;
+          neighbourhood?: string;
+        };
+      };
+
+      const address = data.address ?? {};
+      const city =
+        address.city ||
+        address.town ||
+        address.village ||
+        address.neighbourhood ||
+        "Unknown city";
+      const state = address.state || "Unknown state";
+      const country = address.country || "Unknown country";
+      const postalCode = address.postcode || "N/A";
+
+      const result: LocationDetails = {
+        displayName: data.display_name || `${city}, ${state}`,
+        formattedAddress: `${city}, ${state}, ${country}${postalCode !== "N/A" ? ` ${postalCode}` : ""}`,
+        city,
+        state,
+        country,
+        postalCode,
+        latitude: lat,
+        longitude: lon,
+        source,
+        timestamp: new Date().toLocaleString(),
+      };
+
+      setLocationDetails(result);
+      toast.success("Location resolved successfully");
+    } catch (error) {
+      console.error(error);
+      toast.error("Unable to resolve this location. Check the coordinates and try again.");
+      setLocationDetails(null);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
+  const handleUpdateLocation = async () => {
+    const lat = Number(latitude);
+    const lon = Number(longitude);
+
+    if (!latitude || !longitude) {
+      toast.error("Please enter both latitude and longitude.");
+      return;
+    }
+
+    if (Number.isNaN(lat) || Number.isNaN(lon)) {
+      toast.error("Latitude and longitude must be valid numbers.");
+      return;
+    }
+
+    if (lat < -90 || lat > 90 || lon < -180 || lon > 180) {
+      toast.error("Coordinates are out of range. Use valid latitude and longitude values.");
+      return;
+    }
+
+    await resolveLocation(lat, lon, "manual");
+  };
+
+  const handleUseCurrentLocation = () => {
+    if (!navigator.geolocation) {
+      toast.error("Geolocation is not supported in this browser.");
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const lat = position.coords.latitude;
+        const lon = position.coords.longitude;
+
+        setLatitude(lat.toFixed(6));
+        setLongitude(lon.toFixed(6));
+
+        void resolveLocation(lat, lon, "browser");
+      },
+      () => {
+        toast.error("Unable to access your current location. Try entering coordinates manually.");
+      },
+      {
+        enableHighAccuracy: true,
+      }
+    );
+  };
+
+  const mapUrl = locationDetails
+    ? `https://www.openstreetmap.org/?mlat=${locationDetails.latitude}&mlon=${locationDetails.longitude}#map=15/${locationDetails.latitude}/${locationDetails.longitude}`
+    : "https://www.openstreetmap.org/";
+
   return (
-    <div className="flex bg-[#0B0B0B] min-h-screen">
+    <div className="flex flex-col lg:flex-row bg-[#0B0B0B] min-h-screen">
       <Sidebar />
 
       <div className="flex-1">
         <Navbar />
 
-        <main className="p-6">
-          <h1 className="text-3xl font-bold text-white">
-            Live Tracking
-          </h1>
-
-          <div className="bg-[#1A1A1A] border border-[#27272A] rounded-2xl p-6 mt-8">
-            <div className="h-[400px] rounded-2xl bg-[#111111] flex items-center justify-center border border-[#27272A]">
-              <p className="text-[#A1A1AA] text-lg">
-                Live Map Preview
+        <main className="p-4 md:p-6">
+          <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
+            <div>
+              <p className="text-[11px] uppercase tracking-[0.3em] text-[#A1A1AA]">
+                GPS / live location
+              </p>
+              <h1 className="text-3xl font-bold text-white mt-2">
+                Live location update UI
+              </h1>
+              <p className="text-[#D5D5D5] mt-3 max-w-2xl">
+                Convert coordinates into location details instantly, sync the
+                customer route, and keep all delivery updates aligned with the
+                live operational view.
               </p>
             </div>
 
-            <div className="mt-6 flex flex-col md:flex-row gap-4">
-              <input
-                type="text"
-                placeholder="Latitude"
-                value={latitude}
-                onChange={(e) =>
-                  setLatitude(e.target.value)
-                }
-                className="
-                  bg-[#111111]
-                  border
-                  border-[#27272A]
-                  rounded-2xl
-                  p-3
-                  text-white
-                  flex-1
-                  outline-none
-                "
-              />
+            <div className="rounded-2xl border border-[#27272A] bg-[#1A1A1A] px-4 py-3">
+              <p className="text-sm text-[#A1A1AA]">Active route</p>
+              <p className="text-lg font-semibold text-white mt-1">
+                {activeRoute.customer}
+              </p>
+            </div>
+          </div>
 
-              <input
-                type="text"
-                placeholder="Longitude"
-                value={longitude}
-                onChange={(e) =>
-                  setLongitude(e.target.value)
-                }
-                className="
-                  bg-[#111111]
-                  border
-                  border-[#27272A]
-                  rounded-2xl
-                  p-3
-                  text-white
-                  flex-1
-                  outline-none
-                "
-              />
+          <div className="bg-[#1A1A1A] border border-[#27272A] rounded-2xl p-5 mt-8">
+            <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
+              <div className="rounded-2xl bg-[#111111] border border-[#27272A] p-5">
+                <div className="flex items-center justify-between gap-4">
+                  <div>
+                    <p className="text-sm text-[#A1A1AA]">Map preview</p>
+                    <h2 className="text-xl font-semibold text-white mt-1">
+                      {locationDetails
+                        ? "Resolved location"
+                        : "Enter coordinates to preview"}
+                    </h2>
+                  </div>
 
-              <div onClick={handleUpdate}>
-                <Button>
-                  Update Location
-                </Button>
+                  <span className="text-sm text-[#A1A1AA]">
+                    {locationDetails ? `Source: ${locationDetails.source}` : "Awaiting input"}
+                  </span>
+                </div>
+
+                <div className="mt-4 rounded-2xl border border-[#27272A] bg-[#0B0B0B] p-4 min-h-[300px]">
+                  {locationDetails ? (
+                    <div className="flex flex-col h-full justify-between gap-4">
+                      <div>
+                        <p className="text-sm text-[#A1A1AA]">Place</p>
+                        <p className="text-white text-lg font-semibold mt-2">
+                          {locationDetails.displayName}
+                        </p>
+                        <p className="text-[#D5D5D5] mt-3">
+                          {locationDetails.formattedAddress}
+                        </p>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3 text-sm">
+                        <div className="rounded-xl border border-[#27272A] bg-[#111111] p-3">
+                          <p className="text-[#A1A1AA]">Latitude</p>
+                          <p className="text-white font-semibold mt-2">
+                            {locationDetails.latitude.toFixed(6)}
+                          </p>
+                        </div>
+
+                        <div className="rounded-xl border border-[#27272A] bg-[#111111] p-3">
+                          <p className="text-[#A1A1AA]">Longitude</p>
+                          <p className="text-white font-semibold mt-2">
+                            {locationDetails.longitude.toFixed(6)}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex h-full items-center justify-center text-center px-4">
+                      <p className="text-[#A1A1AA] text-lg">
+                        Coordinates will show the nearest place here once you
+                        resolve them.
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                <div className="mt-4 flex justify-end">
+                  <a
+                    href={mapUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-[#F5D0D0] hover:text-white transition-colors"
+                  >
+                    Open in OpenStreetMap
+                  </a>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="text-sm text-[#A1A1AA]">Latitude</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. 13.0827"
+                    value={latitude}
+                    onChange={(event) => setLatitude(event.target.value)}
+                    className="mt-2 bg-[#111111] border border-[#27272A] rounded-2xl p-3 text-white w-full outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-sm text-[#A1A1AA]">Longitude</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. 80.2707"
+                    value={longitude}
+                    onChange={(event) => setLongitude(event.target.value)}
+                    className="mt-2 bg-[#111111] border border-[#27272A] rounded-2xl p-3 text-white w-full outline-none"
+                  />
+                </div>
+
+                <div className="flex flex-wrap gap-3 pt-2">
+                  <Button onClick={handleUpdateLocation} disabled={isLoading}>
+                    {isLoading ? "Resolving..." : "Update location"}
+                  </Button>
+
+                  <Button
+                    onClick={handleUseCurrentLocation}
+                    disabled={isLoading}
+                    className="bg-transparent border border-[#27272A] hover:bg-[#111111]"
+                  >
+                    Use current location
+                  </Button>
+
+                  <Button
+                    onClick={() => {
+                      setLatitude("");
+                      setLongitude("");
+                      setLocationDetails(null);
+                    }}
+                    className="bg-transparent border border-[#27272A] hover:bg-[#111111]"
+                  >
+                    Clear
+                  </Button>
+                </div>
+
+                <div className="bg-[#111111] border border-[#27272A] rounded-2xl p-4">
+                  <p className="text-sm text-[#A1A1AA]">Live status</p>
+                  <p className="text-white font-semibold mt-2">
+                    {locationDetails?.formattedAddress || "Awaiting GPS input"}
+                  </p>
+                  <p className="text-sm text-[#D5D5D5] mt-3">
+                    Last resolved: {locationDetails?.timestamp || "No location resolved yet"}
+                  </p>
+                </div>
               </div>
             </div>
-
-            {submitted && (
-              <div className="mt-6 bg-[#111111] border border-[#27272A] rounded-2xl p-5">
-                <h2 className="text-white text-xl font-semibold">
-                  Current Coordinates
-                </h2>
-
-                <p className="text-[#A1A1AA] mt-3">
-                  Latitude:
-                  <span className="text-white ml-2">
-                    {latitude}
-                  </span>
-                </p>
-
-                <p className="text-[#A1A1AA] mt-2">
-                  Longitude:
-                  <span className="text-white ml-2">
-                    {longitude}
-                  </span>
-                </p>
-              </div>
-            )}
           </div>
         </main>
       </div>

@@ -3,27 +3,17 @@ interface Props {
 }
 
 const StatusBadge = ({ status }: Props) => {
-  const getStatusColor = () => {
-    switch (status) {
-      case "Pending":
-        return "bg-yellow-500/20 text-yellow-400";
-
-      case "Out for Delivery":
-        return "bg-blue-500/20 text-blue-400";
-
-      case "Delivered":
-        return "bg-green-500/20 text-green-400";
-
-      case "Failed Attempt":
-        return "bg-red-500/20 text-red-400";
-
-      case "Returned":
-        return "bg-orange-500/20 text-orange-400";
-
-      default:
-        return "bg-gray-500/20 text-gray-400";
-    }
+  const statusStyles: Record<string, string> = {
+    Pending: "border-[#3F1F1F] bg-[#111111] text-[#F3F4F6]",
+    "Out for Delivery": "border-[#7F1D1D] bg-[#2A1111] text-[#FCE7E7]",
+    Delivered: "border-[#991B1B] bg-[#111111] text-[#FDF2F2]",
+    "Failed Attempt": "border-[#5F1717] bg-[#130B0B] text-[#FADDDD]",
+    Returned: "border-[#7F1D1D] bg-[#130B0B] text-[#F9DEDE]",
   };
+
+  const classes =
+    statusStyles[status] ||
+    "border-[#27272A] bg-[#111111] text-[#F3F4F6]";
 
   return (
     <span
@@ -32,8 +22,9 @@ const StatusBadge = ({ status }: Props) => {
         py-1
         rounded-full
         text-sm
-        font-medium
-        ${getStatusColor()}
+        font-semibold
+        border
+        ${classes}
       `}
     >
       {status}
