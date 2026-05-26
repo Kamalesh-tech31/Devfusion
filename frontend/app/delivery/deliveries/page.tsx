@@ -1,16 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 
 import Navbar from "@/components/common/Navbar";
 import Sidebar from "@/components/common/Sidebar";
 import DeliveryCard from "@/components/delivery/DeliveryCard";
-import {
-  deliveryRecords,
-  type DeliveryStatus,
-} from "@/components/delivery/deliveryData";
+import type { DeliveryRecord, DeliveryStatus } from "@/components/delivery/deliveryData";
 import Button from "@/components/ui/Button";
+import { fetchDeliveries, updateDeliveryStatus } from "@/lib/api";
 
 const statusOptions: Record<DeliveryStatus, DeliveryStatus[]> = {
   Pending: ["Out for Delivery", "Failed Attempt"],
@@ -21,14 +19,41 @@ const statusOptions: Record<DeliveryStatus, DeliveryStatus[]> = {
 };
 
 export default function DeliveriesPage() {
-  const [deliveries, setDeliveries] = useState(deliveryRecords);
-  const [selectedStatuses, setSelectedStatuses] = useState<
-    Record<string, DeliveryStatus>
-  >(() =>
-    Object.fromEntries(
-      deliveryRecords.map((item) => [item.id, item.status])
-    ) as Record<string, DeliveryStatus>
-  );
+  const [deliveries, setDeliveries] = useState<DeliveryRecord[]>([]);
+  const [selectedStatuses, setSelectedStatuses] = useState<Record<string, DeliveryStatus>>({});
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadDeliveries() {
+      try {
+        const data = await fetchDeliveries();
+
+        if (isMounted) {
+          setDeliveries(data);
+          setSelectedStatuses(
+            Object.fromEntries(data.map((item) => [item.id, item.status])) as Record<string, DeliveryStatus>
+          );
+        }
+      } catch (err) {
+        if (isMounted) {
+          setError(err instanceof Error ? err.message : "Unable to load deliveries.");
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      }
+    }
+
+    void loadDeliveries();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const activeCount = deliveries.filter(
     (item) => item.status !== "Delivered" && item.status !== "Returned"
@@ -38,7 +63,7 @@ export default function DeliveriesPage() {
     (item) => item.status === "Delivered"
   ).length;
 
-  const handleUpdateStatus = (id: string) => {
+  const handleUpdateStatus = async (id: string) => {
     const current = deliveries.find((item) => item.id === id);
     const nextStatus = selectedStatuses[id];
 
@@ -47,19 +72,21 @@ export default function DeliveriesPage() {
       return;
     }
 
-    setDeliveries((prev) =>
-      prev.map((item) =>
-        item.id === id
-          ? {
-              ...item,
-              status: nextStatus,
-              lastUpdated: "Just now",
-            }
-          : item
-      )
-    );
+    try {
+      const updatedDelivery = await updateDeliveryStatus(id, nextStatus);
 
-    toast.success(`${current.customer} updated to ${nextStatus}`);
+      setDeliveries((prev) =>
+        prev.map((item) => (item.id === id ? updatedDelivery : item))
+      );
+      setSelectedStatuses((prev) => ({
+        ...prev,
+        [id]: updatedDelivery.status as DeliveryStatus,
+      }));
+
+      toast.success(`${current.customer} updated to ${nextStatus}`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Unable to update delivery status.");
+    }
   };
 
   return (
@@ -101,73 +128,81 @@ export default function DeliveriesPage() {
             </div>
           </div>
 
-          <div className="mt-8 grid gap-5 xl:grid-cols-2">
-            {deliveries.map((delivery) => {
-              const options = statusOptions[delivery.status];
+          {isLoading ? (
+            <div className="mt-8 rounded-2xl border border-[#27272A] bg-[#1A1A1A] p-6 text-white">
+              Loading deliveries from the backend...
+            </div>
+          ) : error ? (
+            <div className="mt-8 rounded-2xl border border-[#27272A] bg-[#1A1A1A] p-6 text-[#F5D0D0]">
+              {error}
+            </div>
+          ) : (
+            <div className="mt-8 grid gap-5 xl:grid-cols-2">
+              {deliveries.map((delivery) => {
+                const options = statusOptions[delivery.status];
 
-              return (
-                <div
-                  key={delivery.id}
-                  className="bg-[#1A1A1A] border border-[#27272A] rounded-2xl p-5"
-                >
-                  <DeliveryCard
-                    id={delivery.id}
-                    customer={delivery.customer}
-                    address={delivery.address}
-                    eta={delivery.eta}
-                    status={delivery.status}
-                    priority={delivery.priority}
-                    contact={delivery.contact}
-                    location={delivery.location}
-                    lastUpdated={delivery.lastUpdated}
-                  />
+                return (
+                  <div
+                    key={delivery.id}
+                    className="bg-[#1A1A1A] border border-[#27272A] rounded-2xl p-5"
+                  >
+                    <DeliveryCard
+                      id={delivery.id}
+                      customer={delivery.customer}
+                      address={delivery.address}
+                      eta={delivery.eta}
+                      status={delivery.status}
+                      priority={delivery.priority}
+                      contact={delivery.contact}
+                      location={delivery.location}
+                      lastUpdated={delivery.lastUpdated}
+                    />
 
-                  <div className="mt-4 rounded-xl border border-[#27272A] bg-[#111111] p-4">
-                    <p className="text-sm text-[#A1A1AA]">Status update UI</p>
-                    <p className="text-white font-semibold mt-2">
-                      {delivery.customer}
-                    </p>
+                    <div className="mt-4 rounded-xl border border-[#27272A] bg-[#111111] p-4">
+                      <p className="text-sm text-[#A1A1AA]">Status update UI</p>
+                      <p className="text-white font-semibold mt-2">
+                        {delivery.customer}
+                      </p>
 
-                    <div className="mt-4 flex flex-col sm:flex-row gap-3">
-                      <select
-                        value={selectedStatuses[delivery.id]}
-                        onChange={(event) =>
-                          setSelectedStatuses((prev) => ({
-                            ...prev,
-                            [delivery.id]: event.target.value as DeliveryStatus,
-                          }))
-                        }
-                        className="flex-1 bg-[#0B0B0B] border border-[#27272A] text-white rounded-2xl px-3 py-3 outline-none"
-                      >
-                        {options.length > 0 ? (
-                          options.map((option) => (
-                            <option key={option} value={option}>
-                              {option}
-                            </option>
-                          ))
-                        ) : (
-                          <option value={delivery.status}>{delivery.status}</option>
-                        )}
-                      </select>
+                      <div className="mt-4 flex flex-col sm:flex-row gap-3">
+                        <select
+                          value={selectedStatuses[delivery.id]}
+                          onChange={(event) =>
+                            setSelectedStatuses((prev) => ({
+                              ...prev,
+                              [delivery.id]: event.target.value as DeliveryStatus,
+                            }))
+                          }
+                          className="flex-1 bg-[#0B0B0B] border border-[#27272A] text-white rounded-2xl px-3 py-3 outline-none"
+                        >
+                          {options.length > 0 ? (
+                            options.map((option) => (
+                              <option key={option} value={option}>
+                                {option}
+                              </option>
+                            ))
+                          ) : (
+                            <option value={delivery.status}>{delivery.status}</option>
+                          )}
+                        </select>
 
-                      <Button
-                        onClick={() => handleUpdateStatus(delivery.id)}
-                        disabled={
-                          selectedStatuses[delivery.id] === delivery.status
-                        }
-                      >
-                        Save update
-                      </Button>
+                        <Button
+                          onClick={() => void handleUpdateStatus(delivery.id)}
+                          disabled={selectedStatuses[delivery.id] === delivery.status}
+                        >
+                          Save update
+                        </Button>
+                      </div>
+
+                      <p className="text-sm text-[#D5D5D5] mt-3">
+                        Last sync: {delivery.lastUpdated}
+                      </p>
                     </div>
-
-                    <p className="text-sm text-[#D5D5D5] mt-3">
-                      Last sync: {delivery.lastUpdated}
-                    </p>
                   </div>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
+          )}
         </main>
       </div>
     </div>

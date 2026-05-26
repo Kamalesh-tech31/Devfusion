@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 
 import Navbar from "@/components/common/Navbar";
 import Sidebar from "@/components/common/Sidebar";
-import { deliveryRecords } from "@/components/delivery/deliveryData";
+import type { DeliveryRecord } from "@/components/delivery/deliveryData";
 import Button from "@/components/ui/Button";
+import { fetchDashboard, saveLocationUpdate } from "@/lib/api";
 
 interface LocationDetails {
   displayName: string;
@@ -26,8 +27,31 @@ export default function TrackingPage() {
   const [longitude, setLongitude] = useState("");
   const [locationDetails, setLocationDetails] = useState<LocationDetails | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [activeRoute, setActiveRoute] = useState<DeliveryRecord | null>(null);
 
-  const activeRoute = deliveryRecords[0];
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadActiveRoute() {
+      try {
+        const data = await fetchDashboard();
+
+        if (isMounted) {
+          setActiveRoute(data.activeRoutes[0] ?? null);
+        }
+      } catch (err) {
+        if (isMounted) {
+          toast.error(err instanceof Error ? err.message : "Unable to load the active route.");
+        }
+      }
+    }
+
+    void loadActiveRoute();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const resolveLocation = async (
     lat: number,
@@ -89,7 +113,28 @@ export default function TrackingPage() {
       };
 
       setLocationDetails(result);
-      toast.success("Location resolved successfully");
+
+      if (!activeRoute) {
+        toast("Location resolved locally, but no active route is available to sync.", {
+          icon: "ℹ️",
+        });
+        return;
+      }
+
+      await saveLocationUpdate({
+        deliveryId: activeRoute.id,
+        latitude: lat,
+        longitude: lon,
+        source,
+        displayName: result.displayName,
+        formattedAddress: result.formattedAddress,
+        city: result.city,
+        state: result.state,
+        country: result.country,
+        postalCode: result.postalCode,
+        timestamp: result.timestamp,
+      });
+      toast.success("Location resolved and synced to the backend.");
     } catch (error) {
       console.error(error);
       toast.error("Unable to resolve this location. Check the coordinates and try again.");
@@ -176,7 +221,7 @@ export default function TrackingPage() {
             <div className="rounded-2xl border border-[#27272A] bg-[#1A1A1A] px-4 py-3">
               <p className="text-sm text-[#A1A1AA]">Active route</p>
               <p className="text-lg font-semibold text-white mt-1">
-                {activeRoute.customer}
+                {activeRoute?.customer || "No active route available"}
               </p>
             </div>
           </div>
@@ -274,7 +319,7 @@ export default function TrackingPage() {
                 </div>
 
                 <div className="flex flex-wrap gap-3 pt-2">
-                  <Button onClick={handleUpdateLocation} disabled={isLoading}>
+                  <Button onClick={() => void handleUpdateLocation()} disabled={isLoading}>
                     {isLoading ? "Resolving..." : "Update location"}
                   </Button>
 

@@ -1,17 +1,49 @@
+"use client";
+
+import { useEffect, useState } from "react";
+
 import Navbar from "@/components/common/Navbar";
 import Sidebar from "@/components/common/Sidebar";
-import { deliveryHistory } from "@/components/delivery/deliveryData";
 import StatsCard from "@/components/delivery/StatsCard";
 import StatusBadge from "@/components/delivery/StatusBadge";
+import type { DeliveryRecord } from "@/components/delivery/deliveryData";
+import { fetchHistory } from "@/lib/api";
 
 export default function HistoryPage() {
-  const completedCount = deliveryHistory.filter(
-    (item) => item.status === "Delivered"
-  ).length;
+  const [history, setHistory] = useState<DeliveryRecord[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const returnCount = deliveryHistory.filter(
-    (item) => item.status === "Returned"
-  ).length;
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadHistory() {
+      try {
+        const data = await fetchHistory();
+
+        if (isMounted) {
+          setHistory(data);
+        }
+      } catch (err) {
+        if (isMounted) {
+          setError(err instanceof Error ? err.message : "Unable to load delivery history.");
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      }
+    }
+
+    void loadHistory();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const completedCount = history.filter((item) => item.status === "Delivered").length;
+  const returnCount = history.filter((item) => item.status === "Returned").length;
 
   return (
     <div className="flex flex-col lg:flex-row bg-[#0B0B0B] min-h-screen">
@@ -54,40 +86,45 @@ export default function HistoryPage() {
             />
           </div>
 
-          <div className="bg-[#1A1A1A] border border-[#27272A] rounded-2xl mt-8 overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[700px]">
-                <thead className="bg-[#111111]">
-                  <tr>
-                    <th className="text-left p-4 text-[#A1A1AA]">Delivery ID</th>
-                    <th className="text-left p-4 text-[#A1A1AA]">Customer</th>
-                    <th className="text-left p-4 text-[#A1A1AA]">City</th>
-                    <th className="text-left p-4 text-[#A1A1AA]">Status</th>
-                    <th className="text-left p-4 text-[#A1A1AA]">Last sync</th>
-                  </tr>
-                </thead>
-
-                <tbody>
-                  {deliveryHistory.map((delivery) => (
-                    <tr
-                      key={delivery.id}
-                      className="border-t border-[#27272A]"
-                    >
-                      <td className="p-4 text-white">{delivery.id}</td>
-                      <td className="p-4 text-white">{delivery.customer}</td>
-                      <td className="p-4 text-[#D5D5D5]">{delivery.city}</td>
-                      <td className="p-4">
-                        <StatusBadge status={delivery.status} />
-                      </td>
-                      <td className="p-4 text-[#D5D5D5]">
-                        {delivery.lastUpdated}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+          {isLoading ? (
+            <div className="mt-8 rounded-2xl border border-[#27272A] bg-[#1A1A1A] p-6 text-white">
+              Loading delivery history from the backend...
             </div>
-          </div>
+          ) : error ? (
+            <div className="mt-8 rounded-2xl border border-[#27272A] bg-[#1A1A1A] p-6 text-[#F5D0D0]">
+              {error}
+            </div>
+          ) : (
+            <div className="bg-[#1A1A1A] border border-[#27272A] rounded-2xl mt-8 overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[700px]">
+                  <thead className="bg-[#111111]">
+                    <tr>
+                      <th className="text-left p-4 text-[#A1A1AA]">Delivery ID</th>
+                      <th className="text-left p-4 text-[#A1A1AA]">Customer</th>
+                      <th className="text-left p-4 text-[#A1A1AA]">City</th>
+                      <th className="text-left p-4 text-[#A1A1AA]">Status</th>
+                      <th className="text-left p-4 text-[#A1A1AA]">Last sync</th>
+                    </tr>
+                  </thead>
+
+                  <tbody>
+                    {history.map((delivery) => (
+                      <tr key={delivery.id} className="border-t border-[#27272A]">
+                        <td className="p-4 text-white">{delivery.id}</td>
+                        <td className="p-4 text-white">{delivery.customer}</td>
+                        <td className="p-4 text-[#D5D5D5]">{delivery.city}</td>
+                        <td className="p-4">
+                          <StatusBadge status={delivery.status} />
+                        </td>
+                        <td className="p-4 text-[#D5D5D5]">{delivery.lastUpdated}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
         </main>
       </div>
     </div>
