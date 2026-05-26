@@ -1,16 +1,17 @@
-const express = require('express');
-const cors = require('cors');
-const dotenv = require('dotenv');
-const { connectDB } = require('./config/db');
-const errorHandler = require('./middleware/errorMiddleware');
+const express = require("express");
+const cors = require("cors");
+const dotenv = require("dotenv");
+const { connectDB } = require("./config/db");
+const errorHandler = require("./middleware/errorMiddleware");
 
 dotenv.config();
 
-const productRoutes = require('./routes/productRoutes');
-const orderRoutes = require('./routes/orderRoutes');
-const inventoryRoutes = require('./routes/inventoryRoutes');
-const deliveryRoutes = require('./routes/deliveryRoutes');
-const analyticsRoutes = require('./routes/analyticsRoutes');
+const productRoutes = require("./routes/productRoutes");
+const orderRoutes = require("./routes/orderRoutes");
+const inventoryRoutes = require("./routes/inventoryRoutes");
+const deliveryRoutes = require("./routes/deliveryRoutes");
+const analyticsRoutes = require("./routes/analyticsRoutes");
+const authRoutes = require("./routes/authRoutes");
 
 const app = express();
 
@@ -19,14 +20,21 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Health
-app.get('/health', (req, res) => res.json({ success: true, uptime: process.uptime() }));
+app.get("/health", (req, res) =>
+  res.json({ success: true, uptime: process.uptime() }),
+);
+
+app.get("/", (req, res) => {
+  res.send("Backend Running");
+});
 
 // API routes
-app.use('/api/products', productRoutes);
-app.use('/api/orders', orderRoutes);
-app.use('/api/inventory', inventoryRoutes);
-app.use('/api/deliveries', deliveryRoutes);
-app.use('/api/analytics', analyticsRoutes);
+app.use("/api/auth", authRoutes);
+app.use("/api/products", productRoutes);
+app.use("/api/orders", orderRoutes);
+app.use("/api/inventory", inventoryRoutes);
+app.use("/api/deliveries", deliveryRoutes);
+app.use("/api/analytics", analyticsRoutes);
 
 // Error handler (should be last middleware)
 app.use(errorHandler);
