@@ -1,10 +1,11 @@
+require("dotenv").config();
+
 const express = require("express");
 const cors = require("cors");
-const dotenv = require("dotenv");
-const { connectDB } = require("./config/db");
-const errorHandler = require("./middleware/errorMiddleware");
 
-dotenv.config();
+const { connectDB } = require("./config/db");
+
+const errorHandler = require("./middleware/errorHandler");
 
 const productRoutes = require("./routes/productRoutes");
 const orderRoutes = require("./routes/orderRoutes");
@@ -12,38 +13,69 @@ const inventoryRoutes = require("./routes/inventoryRoutes");
 const deliveryRoutes = require("./routes/deliveryRoutes");
 const analyticsRoutes = require("./routes/analyticsRoutes");
 const authRoutes = require("./routes/authRoutes");
+const locationRoutes = require("./routes/locations");
 
 const app = express();
 
-app.use(cors());
+const PORT = Number(process.env.PORT || 4000);
+
+const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:3000";
+
+// Middleware
+app.use(
+  cors({
+    origin: FRONTEND_URL,
+  }),
+);
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Health
-app.get("/health", (req, res) =>
-  res.json({ success: true, uptime: process.uptime() }),
-);
-
-app.get("/", (req, res) => {
-  res.send("Backend Running");
+// Health routes
+app.get("/health", (req, res) => {
+  res.json({
+    success: true,
+    status: "ok",
+    database: "MongoDB",
+    uptime: process.uptime(),
+  });
 });
 
-// API routes
+app.get("/", (req, res) => {
+  res.send("Devfusion Backend Running");
+});
+
+// API Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/inventory", inventoryRoutes);
 app.use("/api/deliveries", deliveryRoutes);
 app.use("/api/analytics", analyticsRoutes);
+app.use("/api/location-updates", locationRoutes);
 
-// Error handler (should be last middleware)
+// Error handler middleware
 app.use(errorHandler);
 
-const PORT = process.env.PORT || 5000;
+// Start server
+const startServer = async () => {
+  try {
+    await connectDB();
 
-const start = async () => {
-  await connectDB();
-  app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+    app.listen(PORT, () => {
+      console.log(`Devfusion backend listening on port ${PORT}`);
+
+      console.log(`Frontend URL: ${FRONTEND_URL}`);
+
+      console.log(`Environment: ${process.env.NODE_ENV || "development"}`);
+    });
+  } catch (error) {
+    console.error("Failed to start server:", error.message);
+
+    process.exit(1);
+  }
 };
 
-start();
+startServer();
+
+module.exports = app;

@@ -1,28 +1,116 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
 const TrackingSchema = new mongoose.Schema(
   {
-    status: { type: String, required: true },
-    location: { type: String },
-    message: { type: String },
-    timestamp: { type: Date, default: Date.now },
+    status: {
+      type: String,
+      required: true,
+    },
+    location: {
+      type: String,
+      trim: true,
+    },
+    message: {
+      type: String,
+      trim: true,
+    },
+    timestamp: {
+      type: Date,
+      default: Date.now,
+    },
   },
-  { _id: false }
+  { _id: false },
 );
 
 const DeliverySchema = new mongoose.Schema(
   {
-    order: { type: mongoose.Schema.Types.ObjectId, ref: 'Order', required: true, unique: true },
-    agent: { type: mongoose.Schema.Types.ObjectId, ref: 'DeliveryAgent' },
+    id: {
+      type: String,
+      required: true,
+      unique: true,
+      trim: true,
+    },
+
+    customer: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+
+    address: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+
+    city: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+
+    eta: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+
     status: {
       type: String,
-      enum: ['pending', 'assigned', 'in_transit', 'delivered', 'failed'],
-      default: 'pending',
+      enum: [
+        "Pending",
+        "Assigned",
+        "Out for Delivery",
+        "Delivered",
+        "Failed Attempt",
+        "Returned",
+      ],
+      default: "Pending",
     },
-    tracking: { type: [TrackingSchema], default: [] },
-    estimatedDelivery: Date,
+
+    priority: {
+      type: String,
+      enum: ["Low", "Medium", "High", "Urgent"],
+      default: "Medium",
+    },
+
+    contact: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+
+    location: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+
+    lastUpdated: {
+      type: String,
+      default: "Just now",
+    },
+
+    order: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Order",
+    },
+
+    agent: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "DeliveryAgent",
+    },
+
+    tracking: {
+      type: [TrackingSchema],
+      default: [],
+    },
+
+    estimatedDelivery: {
+      type: Date,
+    },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
-module.exports = mongoose.model('Delivery', DeliverySchema);
+module.exports = mongoose.model("Delivery", DeliverySchema);
