@@ -57,7 +57,7 @@ async function apiRequest<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 export async function fetchDashboard(): Promise<DashboardData> {
-  return apiRequest<DashboardData>('/api/dashboard');
+  return apiRequest<DashboardData>('/api/deliveries/dashboard');
 }
 
 export async function fetchDeliveries(): Promise<DeliveryRecord[]> {
@@ -65,17 +65,37 @@ export async function fetchDeliveries(): Promise<DeliveryRecord[]> {
 }
 
 export async function fetchHistory(): Promise<DeliveryRecord[]> {
-  return apiRequest<DeliveryRecord[]>('/api/history');
+  return apiRequest<DeliveryRecord[]>('/api/deliveries/history');
 }
 
 export async function fetchEarnings(): Promise<EarningsResponse> {
-  return apiRequest<EarningsResponse>('/api/earnings');
+  return apiRequest<EarningsResponse>('/api/deliveries/earnings');
 }
 
 export async function updateDeliveryStatus(id: string, status: string): Promise<DeliveryRecord> {
   return apiRequest<DeliveryRecord>(`/api/deliveries/${id}/status`, {
     method: 'PATCH',
     body: JSON.stringify({ status }),
+  });
+}
+
+export async function createDelivery(payload: Partial<DeliveryRecord>): Promise<DeliveryRecord> {
+  return apiRequest<DeliveryRecord>('/api/deliveries', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function updateDelivery(id: string, payload: Partial<DeliveryRecord>): Promise<DeliveryRecord> {
+  return apiRequest<DeliveryRecord>(`/api/deliveries/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function deleteDelivery(id: string): Promise<{ success: true }> {
+  return apiRequest<{ success: true }>(`/api/deliveries/${id}`, {
+    method: 'DELETE',
   });
 }
 
