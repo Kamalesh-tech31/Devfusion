@@ -2,44 +2,87 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import {
-  getInventory,
-  saveInventory,
-  InventoryItem,
-} from "@/lib/dashboardData";
+
+const API_URL = "http://localhost:5000/api/inventory";
+
+interface InventoryProduct {
+  _id: string;
+  name: string;
+  price: number;
+  category: string;
+  stock: number;
+  minStock: number;
+}
 
 export default function InventoryRestockPage() {
   const router = useRouter();
-  const [inventory, setInventory] = useState<InventoryItem[]>([]);
+  const [inventory, setInventory] = useState<InventoryProduct[]>([]);
   const [selectedId, setSelectedId] = useState<string>("");
   const [addAmount, setAddAmount] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    const stored = getInventory();
-    setInventory(stored);
-    setSelectedId(stored[0]?.id ? String(stored[0].id) : "");
+    async function loadInventory() {
+      setLoading(true);
+      setError(null);
+
+      try {
+        const response = await fetch(API_URL);
+        if (!response.ok) {
+          throw new Error(`Failed to load inventory (${response.status})`);
+        }
+
+        const json = await response.json();
+        if (!json?.success) {
+          throw new Error(json?.message ?? "Invalid inventory response");
+        }
+
+        const products: InventoryProduct[] = json.data ?? [];
+        setInventory(products);
+        setSelectedId(products[0]?._id ?? "");
+      } catch (err: any) {
+        setError(err?.message ?? "Unable to load inventory");
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadInventory();
   }, []);
 
-  function handleRestock() {
+  async function handleRestock() {
     if (selectedId === "" || addAmount <= 0) return;
 
-    const idNum = Number(selectedId);
+    setSaving(true);
+    setError(null);
 
-    const updated = inventory.map((item) =>
-      item.id === idNum
-        ? {
-            ...item,
-            stock: item.stock + addAmount,
-            status: item.stock + addAmount <= 5 ? "Low Stock" : "Healthy",
-          }
-        : item,
-    );
+    try {
+      const response = await fetch(`${API_URL}/${selectedId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ delta: addAmount }),
+      });
 
-    saveInventory(updated);
-    router.push("/owner/inventory");
+      if (!response.ok) {
+        throw new Error(`Failed to update stock (${response.status})`);
+      }
+
+      const json = await response.json();
+      if (!json?.success) {
+        throw new Error(json?.message ?? "Failed to update inventory");
+      }
+
+      router.push("/owner/inventory");
+    } catch (err: any) {
+      setError(err?.message ?? "Unable to restock product");
+    } finally {
+      setSaving(false);
+    }
   }
 
-  const selectedItem = inventory.find((item) => item.id === Number(selectedId));
+  const selectedItem = inventory.find((item) => item._id === selectedId);
 
   return (
     <div className="p-8">
@@ -48,7 +91,7 @@ export default function InventoryRestockPage() {
       <div className="space-y-4 max-w-md">
         <label className="block text-gray-400">Select product</label>
         <select
-          value={selectedId != null ? String(selectedId) : ""}
+          value={selectedId != null ? selectedId : ""}
           onChange={(e) => setSelectedId(e.target.value)}
           className="w-full bg-[#111111] border border-[#2A2A2A] rounded-2xl px-4 py-3 text-white outline-none"
         >
@@ -56,16 +99,15 @@ export default function InventoryRestockPage() {
             -- Select product --
           </option>
           {inventory.map((item) => (
-            <option key={item.id} value={String(item.id)}>
-              {item.product} ({item.sku})
+            <option key={item._id} value={item._id}>
+              {item.name}
             </option>
           ))}
         </select>
 
         {selectedItem && (
           <p className="text-gray-400">
-            Current stock:{" "}
-            <span className="text-white">{selectedItem.stock}</span>
+            Current stock: <span className="text-white">{selectedItem.stock}</span>
           </p>
         )}
 
@@ -77,13 +119,16 @@ export default function InventoryRestockPage() {
           className="w-full bg-[#111111] border border-[#2A2A2A] rounded-2xl pl-4 pr-4 py-3 text-white outline-none"
         />
 
+        {error && <p className="text-red-400">{error}</p>}
+
         <div className="flex gap-2">
           <button
             type="button"
             onClick={handleRestock}
+            disabled={saving}
             className="px-4 py-2 bg-[#7F1D1D] rounded-2xl text-white"
           >
-            Save Restock
+            {saving ? "Saving..." : "Save Restock"}
           </button>
 
           <button

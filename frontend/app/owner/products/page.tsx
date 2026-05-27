@@ -3,15 +3,78 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { Search, Pencil, Trash2 } from "lucide-react";
-import { getProducts, Product, saveProducts } from "@/lib/dashboardData";
+
+const DEFAULT_IMAGE =
+  "https://images.unsplash.com/photo-1580894908361-967195033215";
+
+interface ApiProduct {
+  _id: string;
+  name: string;
+  sku?: string;
+  price?: number | string;
+  stock?: number;
+  images?: string[];
+}
+
+interface ProductView {
+  _id: string;
+  name: string;
+  sku?: string;
+  price: string;
+  stock: number;
+  status: string;
+  image: string;
+}
 
 export default function ProductsPage() {
   const router = useRouter();
   const [query, setQuery] = useState("");
-  const [items, setItems] = useState<Product[]>([]);
+  const [items, setItems] = useState<ProductView[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    setItems(getProducts());
+    async function load() {
+      setLoading(true);
+      setError(null);
+
+      try {
+        const res = await fetch("http://localhost:5000/api/products");
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const json = await res.json();
+        if (!json || json.success !== true) {
+          throw new Error(json?.message ?? "Unexpected API response");
+        }
+
+        const mapped: ProductView[] = (json.data as ApiProduct[]).map((p) => {
+          const stock = typeof p.stock === "number" ? p.stock : Number(p.stock) || 0;
+          const status =
+            stock <= 0 ? "Out of Stock" : stock <= 5 ? "Low Stock" : "In Stock";
+          const rawPrice = p.price ?? 0;
+          const priceString =
+            typeof rawPrice === "number" ? `$${rawPrice}` : String(rawPrice);
+          const image = Array.isArray(p.images) && p.images.length ? p.images[0] : DEFAULT_IMAGE;
+
+          return {
+            _id: p._id,
+            name: p.name,
+            sku: p.sku,
+            price: priceString,
+            stock,
+            status,
+            image,
+          };
+        });
+
+        setItems(mapped);
+      } catch (err: any) {
+        setError(err?.message ?? "Failed to load products");
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    load();
 
     function onGlobalSearch(e: Event) {
       // @ts-ignore
@@ -20,30 +83,37 @@ export default function ProductsPage() {
     }
 
     window.addEventListener("global-search", onGlobalSearch as EventListener);
-
     return () =>
-      window.removeEventListener(
-        "global-search",
-        onGlobalSearch as EventListener,
-      );
+      window.removeEventListener("global-search", onGlobalSearch as EventListener);
   }, []);
 
   const filtered = useMemo(
     () =>
       items.filter((p) =>
-        `${p.name} ${p.sku}`.toLowerCase().includes(query.toLowerCase()),
+        `${p.name} ${p.sku ?? ""}`.toLowerCase().includes(query.toLowerCase()),
       ),
     [query, items],
   );
 
-  function handleDelete(id: number) {
-    const updated = items.filter((p) => p.id !== id);
+  async function handleDelete(id: string) {
+    const updated = items.filter((p) => p._id !== id);
+    // optimistic update
     setItems(updated);
-    saveProducts(updated);
+
+    try {
+      await fetch(`http://localhost:5000/api/products/${id}`, { method: "DELETE" });
+    } catch (err: any) {
+      setError(err?.message ?? "Failed to delete product");
+      // keep optimistic change; if you prefer to revert on failure, implement revert logic here
+    }
   }
 
-  function handleEdit(id: number) {
+  function handleEdit(id: string) {
     router.push(`/owner/products/${id}/edit`);
+  }
+
+  function handleAdd() {
+    router.push("/owner/products/add");
   }
 
   return (
@@ -58,10 +128,7 @@ export default function ProductsPage() {
           </p>
         </div>
 
-        <button
-          onClick={() => router.push("/owner/products/add")}
-          className="bg-red-600 px-5 py-3 rounded-xl"
-        >
+        <button onClick={handleAdd} className="bg-red-600 px-5 py-3 rounded-xl">
           Add Product
         </button>
       </div>
@@ -84,11 +151,15 @@ export default function ProductsPage() {
         />
       </div>
 
+      {/* status messages */}
+      {loading && <p className="text-gray-400">Loading products...</p>}
+      {error && <p className="text-red-400">Error: {error}</p>}
+
       {/* Product Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
         {filtered.map((product) => (
           <div
-            key={product.id}
+            key={product._id}
             className="bg-[#111111] border border-[#1F1F1F] rounded-3xl overflow-hidden hover:border-[#7F1D1D] transition-all duration-300"
           >
             {/* Image */}
@@ -145,7 +216,7 @@ export default function ProductsPage() {
               <div className="flex gap-3 pt-2">
                 <button
                   type="button"
-                  onClick={() => handleEdit(product.id)}
+                  onClick={() => handleEdit(product._id)}
                   className="flex-1 flex items-center justify-center gap-2 bg-[#1A1A1A] hover:bg-[#252525] transition-all duration-300 py-3 rounded-2xl text-white"
                 >
                   <Pencil size={18} />
@@ -154,7 +225,7 @@ export default function ProductsPage() {
 
                 <button
                   type="button"
-                  onClick={() => handleDelete(product.id)}
+                  onClick={() => handleDelete(product._id)}
                   className="flex-1 flex items-center justify-center gap-2 bg-red-500/10 hover:bg-red-500/20 transition-all duration-300 py-3 rounded-2xl text-red-400"
                 >
                   <Trash2 size={18} />

@@ -9,9 +9,24 @@ import {
   RefreshCcw,
   Search,
 } from "lucide-react";
-import { getInventory, InventoryItem } from "@/lib/dashboardData";
 
-const inventoryDefaults: InventoryItem[] = [];
+const API_URL = "http://localhost:5000/api/inventory";
+
+interface InventoryProduct {
+  _id: string;
+  name: string;
+  price: number;
+  category: string;
+  stock: number;
+  minStock: number;
+}
+
+interface InventoryApiResponse {
+  success: boolean;
+  count: number;
+  totalItems: number;
+  data: InventoryProduct[];
+}
 
 const history = [
   {
@@ -34,33 +49,69 @@ const history = [
 export default function InventoryPage() {
   const router = useRouter();
   const [query, setQuery] = useState("");
-  const [items, setItems] = useState<InventoryItem[]>(inventoryDefaults);
+  const [inventory, setInventory] = useState<InventoryProduct[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    setItems(getInventory());
+    async function fetchInventory() {
+      setLoading(true);
+      setError(null);
 
-    function onGlobalSearch(e: Event) {
-      // @ts-ignore
-      const q = e?.detail?.query ?? "";
-      setQuery(q);
+      try {
+        const response = await fetch(API_URL);
+        if (!response.ok) {
+          throw new Error(`Fetch failed with status ${response.status}`);
+        }
+
+        const json = (await response.json()) as InventoryApiResponse;
+        if (!json?.success) {
+          throw new Error("Invalid API response");
+        }
+
+        setInventory(json.data ?? []);
+      } catch (err: any) {
+        setError(err?.message ?? "Failed to load inventory");
+      } finally {
+        setLoading(false);
+      }
     }
 
-    window.addEventListener("global-search", onGlobalSearch as EventListener);
-
-    return () =>
-      window.removeEventListener(
-        "global-search",
-        onGlobalSearch as EventListener,
-      );
+    fetchInventory();
   }, []);
 
   const filtered = useMemo(
     () =>
-      items.filter((i) =>
-        `${i.product} ${i.sku}`.toLowerCase().includes(query.toLowerCase()),
+      inventory.filter((item) =>
+        `${item.name} ${item.category}`
+          .toLowerCase()
+          .includes(query.toLowerCase()),
       ),
-    [query, items],
+    [query, inventory],
   );
+
+  const totalProducts = inventory.length;
+  const lowStockAlerts = inventory.filter(
+    (item) => item.stock <= item.minStock,
+  ).length;
+  const totalInventoryItems = inventory.reduce(
+    (sum, item) => sum + item.stock,
+    0,
+  );
+
+  function getStatus(item: InventoryProduct) {
+    if (item.stock <= item.minStock) return "Low Stock";
+    if (item.stock <= item.minStock + 5) return "Medium";
+    return "Healthy";
+  }
+
+  function getStatusClasses(item: InventoryProduct) {
+    const status = getStatus(item);
+
+    if (status === "Low Stock") return "bg-red-500/20 text-red-400";
+    if (status === "Medium") return "bg-yellow-500/20 text-yellow-400";
+    return "bg-green-500/20 text-green-400";
+  }
 
   return (
     <div className="space-y-8">
@@ -93,7 +144,9 @@ export default function InventoryPage() {
             <div>
               <p className="text-gray-400">Total Products</p>
 
-              <h2 className="text-5xl font-bold text-white mt-3">342</h2>
+              <h2 className="text-5xl font-bold text-white mt-3">
+                {totalProducts}
+              </h2>
             </div>
 
             <div className="bg-[#7F1D1D]/20 p-5 rounded-2xl">
@@ -107,7 +160,9 @@ export default function InventoryPage() {
             <div>
               <p className="text-gray-400">Low Stock Alerts</p>
 
-              <h2 className="text-5xl font-bold text-white mt-3">8</h2>
+              <h2 className="text-5xl font-bold text-white mt-3">
+                {lowStockAlerts}
+              </h2>
             </div>
 
             <div className="bg-red-500/20 p-5 rounded-2xl">
@@ -119,9 +174,11 @@ export default function InventoryPage() {
         <div className="bg-[#111111] border border-[#1F1F1F] rounded-3xl p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-gray-400">Restocks Today</p>
+              <p className="text-gray-400">Total Inventory Items</p>
 
-              <h2 className="text-5xl font-bold text-white mt-3">14</h2>
+              <h2 className="text-5xl font-bold text-white mt-3">
+                {totalInventoryItems}
+              </h2>
             </div>
 
             <div className="bg-green-500/20 p-5 rounded-2xl">
@@ -149,6 +206,9 @@ export default function InventoryPage() {
         />
       </div>
 
+      {loading && <p className="text-gray-400">Loading inventory...</p>}
+      {error && <p className="text-red-400">Error: {error}</p>}
+
       {/* Inventory Table */}
       <div className="bg-[#111111] border border-[#1F1F1F] rounded-3xl overflow-hidden">
         <div className="p-6 border-b border-[#1F1F1F]">
@@ -172,26 +232,24 @@ export default function InventoryPage() {
             <tbody>
               {filtered.map((item) => (
                 <tr
-                  key={item.id}
+                  key={item._id}
                   className="border-t border-[#1F1F1F] hover:bg-[#181818] transition-all"
                 >
                   <td className="px-6 py-5 text-white font-medium">
-                    {item.product}
+                    {item.name}
                   </td>
 
-                  <td className="px-6 py-5 text-gray-400">{item.sku}</td>
+                  <td className="px-6 py-5 text-gray-400">{item.category}</td>
 
                   <td className="px-6 py-5 text-white">{item.stock}</td>
 
                   <td className="px-6 py-5">
                     <span
-                      className={`px-4 py-2 rounded-full text-sm ${
-                        item.status === "Low Stock"
-                          ? "bg-red-500/20 text-red-400"
-                          : "bg-green-500/20 text-green-400"
-                      }`}
+                      className={`px-4 py-2 rounded-full text-sm ${getStatusClasses(
+                        item,
+                      )}`}
                     >
-                      {item.status}
+                      {getStatus(item)}
                     </span>
                   </td>
                 </tr>

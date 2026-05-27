@@ -1,10 +1,17 @@
 "use client";
 
-import { Agent } from "@/lib/dashboardData";
 import { MapPin, Truck, Sparkles } from "lucide-react";
 
+interface DeliveryAgent {
+  _id: string;
+  name: string;
+  contact: string;
+  isAvailable: boolean;
+  vehicle: string;
+}
+
 interface DeliveryMapProps {
-  agents?: Agent[];
+  agents?: DeliveryAgent[];
 }
 
 export default function DeliveryMap({ agents = [] }: DeliveryMapProps) {
@@ -98,54 +105,16 @@ export default function DeliveryMap({ agents = [] }: DeliveryMapProps) {
             }`}
           >
             <span className="flex h-11 w-11 items-center justify-center rounded-full bg-slate-950/10 shadow-inner">
-              <MapPin size={18} aria-hidden="true" />
+              {index === 0 && <MapPin size={18} />}
+              {index === 1 && <Truck size={18} />}
+              {index === 2 && <Sparkles size={18} />}
             </span>
-            <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-950">
-              {marker.label}
-            </span>
+            <div className="text-center">
+              <p className="font-semibold text-xs">{marker.label}</p>
+              <p className="text-xs opacity-75">{marker.subtitle}</p>
+            </div>
           </div>
         ))}
-
-        <div className="absolute top-6 right-6 rounded-3xl border border-white/10 bg-[#0B0B0B]/90 p-4 text-white shadow-xl shadow-black/30 backdrop-blur-sm">
-          <div className="flex items-center gap-2 text-xs text-neutral-400">
-            <span className="inline-flex h-2.5 w-2.5 rounded-full bg-emerald-400 animate-pulse" />
-            Dispatch live
-          </div>
-          <div className="mt-3 flex items-center gap-2 text-xs text-neutral-400">
-            <span className="inline-flex h-2.5 w-2.5 rounded-full bg-amber-400" />
-            Route traffic moderate
-          </div>
-        </div>
-
-        <div className="absolute bottom-6 left-6 rounded-3xl border border-white/10 bg-[#0B0B0B]/92 p-4 shadow-2xl shadow-black/30 backdrop-blur-sm w-72">
-          <div className="flex items-center gap-3">
-            <div className="grid h-11 w-11 place-items-center rounded-2xl bg-red-600 text-white">
-              <Truck size={18} />
-            </div>
-            <div>
-              <p className="text-sm text-neutral-400">Most active route</p>
-              <p className="text-white font-semibold">
-                East Zone — 8 stops remaining
-              </p>
-            </div>
-          </div>
-
-          <div className="mt-4 flex items-center gap-2 rounded-full bg-white/5 px-3 py-2 text-xs text-neutral-300">
-            <Sparkles size={14} />
-            <span>Speed advantage +12% vs last week</span>
-          </div>
-
-          <div className="mt-4 grid grid-cols-2 gap-3 text-sm text-neutral-400">
-            <div>
-              <p className="text-white font-semibold">14 min</p>
-              <p className="mt-1">Avg delay</p>
-            </div>
-            <div>
-              <p className="text-white font-semibold">3</p>
-              <p className="mt-1">Traffic alerts</p>
-            </div>
-          </div>
-        </div>
       </div>
     </div>
   );

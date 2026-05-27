@@ -1,39 +1,88 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { ShoppingCart, Clock, CheckCircle, Truck } from "lucide-react";
-import { getOrders, Order } from "@/lib/dashboardData";
+
+const API_URL = "http://localhost:5000/api/orders";
+
+interface Product {
+  _id: string;
+  name: string;
+  price: number;
+  images?: string[];
+}
+
+interface OrderItem {
+  product?: Product;
+  quantity: number;
+  price: number;
+}
+
+interface Order {
+  _id: string;
+  orderId: string;
+  customerName: string;
+  items: OrderItem[];
+  totalPrice: number;
+  status: "pending" | "processing" | "shipped" | "delivered" | "cancelled" | string;
+  shippedAt: string | null;
+  deliveredAt: string | null;
+}
 
 export default function OrdersPage() {
-  const orders: Order[] = getOrders();
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  function handleExport() {
-    const csvRows = [
-      ["Order ID", "Customer", "Product", "Amount", "Payment", "Status"].join(
-        ",",
-      ),
-      ...orders.map((order) =>
-        [
-          order.id,
-          order.customer,
-          order.product,
-          order.amount,
-          order.payment,
-          order.status,
-        ]
-          .map((value) => `"${String(value).replace(/"/g, '""')}"`)
-          .join(","),
-      ),
-    ];
+  useEffect(() => {
+    async function loadOrders() {
+      setLoading(true);
+      setError(null);
 
-    const blob = new Blob([csvRows.join("\n")], { type: "text/csv" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
+      try {
+        const response = await fetch(API_URL);
+        if (!response.ok) {
+          throw new Error(`Failed to load orders (${response.status})`);
+        }
 
-    link.href = url;
-    link.download = "orders.csv";
-    link.click();
+        const json = await response.json();
+        if (!json || json.success !== true) {
+          throw new Error(json?.message ?? "Unexpected API response");
+        }
 
-    URL.revokeObjectURL(url);
+        setOrders(json.data ?? []);
+      } catch (err: any) {
+        setError(err?.message ?? "Unable to load orders");
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadOrders();
+  }, []);
+
+  const totalOrders = orders.length;
+  const pendingCount = orders.filter((order) => order.status === "pending").length;
+  const deliveredCount = orders.filter((order) => order.status === "delivered").length;
+  const inDeliveryCount = orders.filter(
+    (order) => order.status === "processing" || order.status === "shipped",
+  ).length;
+
+  function getStatusClasses(status: string) {
+    switch (status) {
+      case "pending":
+        return "bg-yellow-500/20 text-yellow-400";
+      case "processing":
+        return "bg-blue-500/20 text-blue-400";
+      case "shipped":
+        return "bg-purple-500/20 text-purple-400";
+      case "delivered":
+        return "bg-green-500/20 text-green-400";
+      case "cancelled":
+        return "bg-red-500/20 text-red-400";
+      default:
+        return "bg-gray-500/20 text-gray-300";
+    }
   }
 
   return (
@@ -55,7 +104,7 @@ export default function OrdersPage() {
             <div>
               <p className="text-gray-400">Total Orders</p>
 
-              <h2 className="text-3xl font-bold mt-2">1,248</h2>
+              <h2 className="text-3xl font-bold mt-2">{totalOrders}</h2>
             </div>
 
             <div className="w-14 h-14 rounded-2xl bg-[#7F1D1D]/20 border border-[#7F1D1D] flex items-center justify-center">
@@ -70,7 +119,7 @@ export default function OrdersPage() {
             <div>
               <p className="text-gray-400">Pending</p>
 
-              <h2 className="text-3xl font-bold mt-2">18</h2>
+              <h2 className="text-3xl font-bold mt-2">{pendingCount}</h2>
             </div>
 
             <div className="w-14 h-14 rounded-2xl bg-yellow-500/10 border border-yellow-500 flex items-center justify-center">
@@ -85,7 +134,7 @@ export default function OrdersPage() {
             <div>
               <p className="text-gray-400">Delivered</p>
 
-              <h2 className="text-3xl font-bold mt-2">892</h2>
+              <h2 className="text-3xl font-bold mt-2">{deliveredCount}</h2>
             </div>
 
             <div className="w-14 h-14 rounded-2xl bg-green-500/10 border border-green-500 flex items-center justify-center">
@@ -100,7 +149,7 @@ export default function OrdersPage() {
             <div>
               <p className="text-gray-400">In Delivery</p>
 
-              <h2 className="text-3xl font-bold mt-2">42</h2>
+              <h2 className="text-3xl font-bold mt-2">{inDeliveryCount}</h2>
             </div>
 
             <div className="w-14 h-14 rounded-2xl bg-blue-500/10 border border-blue-500 flex items-center justify-center">
@@ -109,6 +158,9 @@ export default function OrdersPage() {
           </div>
         </div>
       </div>
+
+      {loading && <p className="text-gray-400">Loading orders...</p>}
+      {error && <p className="text-red-400">Error: {error}</p>}
 
       {/* Orders Table */}
       <div className="bg-[#111111] border border-[#1F1F1F] rounded-2xl overflow-hidden">
@@ -123,7 +175,6 @@ export default function OrdersPage() {
 
           <button
             type="button"
-            onClick={handleExport}
             className="px-5 py-2 rounded-xl bg-[#7F1D1D] hover:bg-[#991B1B] transition-all"
           >
             Export
@@ -146,39 +197,33 @@ export default function OrdersPage() {
           <tbody>
             {orders.map((order, index) => (
               <tr
-                key={index}
+                key={order._id}
                 className="border-t border-[#1F1F1F] hover:bg-[#151515] transition-all"
               >
-                <td className="p-5 font-medium">{order.id}</td>
+                <td className="p-5 font-medium">{order.orderId}</td>
 
-                <td className="p-5">{order.customer}</td>
+                <td className="p-5">{order.customerName}</td>
 
-                <td className="p-5 text-gray-300">{order.product}</td>
+                <td className="p-5 text-gray-300">
+                  {order.items[0]?.product?.name ?? "Unknown product"}
+                </td>
 
-                <td className="p-5">{order.amount}</td>
+                <td className="p-5">₹{order.totalPrice}</td>
 
                 <td className="p-5">
                   <span
                     className={`px-3 py-1 rounded-full text-sm ${
-                      order.payment === "Paid"
+                      order.status === "delivered"
                         ? "bg-green-500/20 text-green-400"
                         : "bg-yellow-500/20 text-yellow-400"
                     }`}
                   >
-                    {order.payment}
+                    {order.status === "delivered" ? "Paid" : "Pending"}
                   </span>
                 </td>
 
                 <td className="p-5">
-                  <span
-                    className={`px-3 py-1 rounded-full text-sm ${
-                      order.status === "Delivered"
-                        ? "bg-green-500/20 text-green-400"
-                        : order.status === "Processing"
-                          ? "bg-yellow-500/20 text-yellow-400"
-                          : "bg-blue-500/20 text-blue-400"
-                    }`}
-                  >
+                  <span className={`px-3 py-1 rounded-full text-sm ${getStatusClasses(order.status)}`}>
                     {order.status}
                   </span>
                 </td>

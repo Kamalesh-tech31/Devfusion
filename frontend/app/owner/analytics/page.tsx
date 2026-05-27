@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import {
   LineChart,
   Line,
@@ -17,44 +18,159 @@ import {
   Legend,
 } from "recharts";
 
-const revenueData = [
-  { month: "Jan", revenue: 4000, orders: 120 },
-  { month: "Feb", revenue: 5200, orders: 135 },
-  { month: "Mar", revenue: 6100, orders: 150 },
-  { month: "Apr", revenue: 5800, orders: 142 },
-  { month: "May", revenue: 7300, orders: 178 },
-  { month: "Jun", revenue: 8200, orders: 193 },
-  { month: "Jul", revenue: 9100, orders: 210 },
-];
+const API_URL = "http://localhost:5000/api/analytics";
 
-const deliveryData = [
-  { region: "North", deliveries: 142 },
-  { region: "East", deliveries: 186 },
-  { region: "South", deliveries: 164 },
-  { region: "West", deliveries: 132 },
-];
+interface AnalyticsData {
+  totalRevenue: number;
+  totalOrders: number;
+  salesGrowthPercent: number;
+  lowStockCount: number;
+  last30Revenue: number;
+  prev30Revenue: number;
+}
 
-const statusData = [
-  { name: "Delivered", value: 62, color: "bg-emerald-400", hex: "#22c55e" },
-  { name: "In Transit", value: 24, color: "bg-sky-400", hex: "#38bdf8" },
-  { name: "Delayed", value: 9, color: "bg-orange-400", hex: "#f97316" },
-  { name: "Cancelled", value: 5, color: "bg-red-400", hex: "#ef4444" },
-];
+interface RevenueDataPoint {
+  month: string;
+  revenue: number;
+  orders: number;
+}
 
-const topRoutes = [
-  { route: "East Corridor", efficiency: "96%", time: "18m" },
-  { route: "North Supply", efficiency: "91%", time: "24m" },
-  { route: "South Loop", efficiency: "89%", time: "29m" },
-];
+interface DeliveryDataPoint {
+  region: string;
+  deliveries: number;
+}
 
-const stats = [
-  { label: "Revenue this month", value: "$16.2K", delta: "+18.4%" },
-  { label: "Average order value", value: "$72.40", delta: "+4.3%" },
-  { label: "Route efficiency", value: "94%", delta: "+2.7%" },
-  { label: "On-time delivery", value: "91%", delta: "+5.1%" },
-];
+interface StatusDataPoint {
+  name: string;
+  value: number;
+  color: string;
+  hex: string;
+}
 
 export default function AnalyticsPage() {
+  const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function fetchAnalytics() {
+      setLoading(true);
+      setError(null);
+
+      try {
+        const response = await fetch(API_URL);
+        if (!response.ok) {
+          throw new Error(`Failed to fetch analytics (${response.status})`);
+        }
+
+        const json = await response.json();
+        if (!json?.success) {
+          throw new Error(json?.message ?? "Invalid API response");
+        }
+
+        setAnalytics(json.data);
+      } catch (err: any) {
+        setError(err?.message ?? "Unable to load analytics");
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchAnalytics();
+  }, []);
+
+  // Generate synthetic chart data from API values
+  const generateRevenueData = (): RevenueDataPoint[] => {
+    if (!analytics) return [];
+    const baseRevenue = Math.floor(analytics.totalRevenue / 7);
+    const baseOrders = Math.floor(analytics.totalOrders / 7);
+    return [
+      { month: "Jan", revenue: baseRevenue * 0.5, orders: Math.floor(baseOrders * 0.6) },
+      { month: "Feb", revenue: baseRevenue * 0.65, orders: Math.floor(baseOrders * 0.75) },
+      { month: "Mar", revenue: baseRevenue * 0.76, orders: Math.floor(baseOrders * 0.85) },
+      { month: "Apr", revenue: baseRevenue * 0.72, orders: Math.floor(baseOrders * 0.8) },
+      { month: "May", revenue: baseRevenue * 0.91, orders: Math.floor(baseOrders * 1.0) },
+      { month: "Jun", revenue: baseRevenue * 1.02, orders: Math.floor(baseOrders * 1.09) },
+      { month: "Jul", revenue: baseRevenue * 1.13, orders: Math.floor(baseOrders * 1.2) },
+    ];
+  };
+
+  const generateDeliveryData = (): DeliveryDataPoint[] => {
+    if (!analytics) return [];
+    return [
+      { region: "North", deliveries: Math.floor(analytics.totalOrders * 0.35) },
+      { region: "East", deliveries: Math.floor(analytics.totalOrders * 0.45) },
+      { region: "South", deliveries: Math.floor(analytics.totalOrders * 0.40) },
+      { region: "West", deliveries: Math.floor(analytics.totalOrders * 0.33) },
+    ];
+  };
+
+  const generateStatusData = (): StatusDataPoint[] => {
+    if (!analytics) return [];
+    const delivered = Math.floor(analytics.totalOrders * 0.62);
+    const inTransit = Math.floor(analytics.totalOrders * 0.24);
+    const delayed = Math.floor(analytics.totalOrders * 0.09);
+    const cancelled = Math.floor(analytics.totalOrders * 0.05);
+    return [
+      { name: "Delivered", value: delivered, color: "bg-emerald-400", hex: "#22c55e" },
+      { name: "In Transit", value: inTransit, color: "bg-sky-400", hex: "#38bdf8" },
+      { name: "Delayed", value: delayed, color: "bg-orange-400", hex: "#f97316" },
+      { name: "Cancelled", value: cancelled, color: "bg-red-400", hex: "#ef4444" },
+    ];
+  };
+
+  const generateStats = () => {
+    if (!analytics) return [];
+    const revenueK = (analytics.totalRevenue / 1000).toFixed(1);
+    const avgOrderValue = analytics.totalOrders > 0
+      ? (analytics.totalRevenue / analytics.totalOrders).toFixed(2)
+      : "0";
+    const routeEfficiency = 94; // Static placeholder
+    const onTimeDelivery = 91; // Static placeholder
+
+    return [
+      {
+        label: "Revenue this month",
+        value: `$${revenueK}K`,
+        delta: `+${analytics.salesGrowthPercent.toFixed(1)}%`,
+      },
+      {
+        label: "Average order value",
+        value: `$${avgOrderValue}`,
+        delta: "+4.3%",
+      },
+      { label: "Route efficiency", value: `${routeEfficiency}%`, delta: "+2.7%" },
+      { label: "On-time delivery", value: `${onTimeDelivery}%`, delta: "+5.1%" },
+    ];
+  };
+
+  const topRoutes = [
+    { route: "East Corridor", efficiency: "96%", time: "18m" },
+    { route: "North Supply", efficiency: "91%", time: "24m" },
+    { route: "South Loop", efficiency: "89%", time: "29m" },
+  ];
+
+  if (loading) {
+    return (
+      <div className="p-8 text-white">
+        <p>Loading analytics...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-8 text-red-400">
+        <p>Error: {error}</p>
+      </div>
+    );
+  }
+
+  const revenueData = generateRevenueData();
+  const deliveryData = generateDeliveryData();
+  const statusData = generateStatusData();
+  const stats = generateStats();
+
   return (
     <div className="space-y-8 p-8">
       <div className="rounded-3xl border border-[#1F1F1F] bg-[#111111] p-6 shadow-xl shadow-black/20">
@@ -191,7 +307,7 @@ export default function AnalyticsPage() {
             </div>
 
             <div className="mt-4 grid gap-3">
-              {statusData.map((item, index) => (
+              {statusData.map((item) => (
                 <div
                   key={item.name}
                   className="flex items-center justify-between rounded-3xl bg-[#0B0B0B] px-4 py-3"
@@ -203,7 +319,7 @@ export default function AnalyticsPage() {
                     </span>
                   </div>
                   <span className="text-sm font-semibold text-white">
-                    {item.value}%
+                    {item.value}
                   </span>
                 </div>
               ))}

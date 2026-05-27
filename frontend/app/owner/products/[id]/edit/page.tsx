@@ -2,13 +2,15 @@
 
 import { useRouter, useParams } from "next/navigation";
 import { useState, useEffect } from "react";
-import { getProducts, saveProducts, Product } from "@/lib/dashboardData";
 
 export default function EditProductPage() {
   const router = useRouter();
   const params = useParams();
   const id = params?.id;
-  const [product, setProduct] = useState<Product | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
   const [name, setName] = useState("");
   const [sku, setSku] = useState("");
   const [price, setPrice] = useState("");
@@ -17,22 +19,28 @@ export default function EditProductPage() {
 
   useEffect(() => {
     if (!id) return;
+    (async function load() {
+      setLoading(true);
+      setError(null);
+      try {
+        const res = await fetch(`http://localhost:5000/api/products/${id}`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const json = await res.json();
+        if (!json?.success) throw new Error(json?.message ?? "Failed to load");
 
-    const products = getProducts();
-    const existing = products.find((item) => item.id === Number(id));
-
-    if (!existing) {
-      router.push("/owner/products");
-      return;
-    }
-
-    setProduct(existing);
-    setName(existing.name);
-    setSku(existing.sku);
-    setPrice(existing.price);
-    setStock(existing.stock);
-    setImage(existing.image);
-  }, [id, router]);
+        const p = json.data;
+        setName(p.name ?? "");
+        setSku(p.sku ?? "");
+        setPrice(p.price != null ? String(p.price) : "");
+        setStock(Number(p.stock) || 0);
+        setImage(Array.isArray(p.images) && p.images.length ? p.images[0] : "");
+      } catch (err: any) {
+        setError(err?.message ?? "Failed to load product");
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [id]);
 
   function statusFromStock(value: number) {
     if (value <= 0) return "Out of Stock";
@@ -40,32 +48,50 @@ export default function EditProductPage() {
     return "In Stock";
   }
 
-  function handleSave() {
-    if (!product) return;
+  async function handleSave() {
+    if (!id) return;
+    setSaving(true);
+    setError(null);
 
-    const products = getProducts();
-    const updatedProducts = products.map((item) =>
-      item.id === product.id
-        ? {
-            ...item,
-            name: name.trim() || item.name,
-            sku: sku.trim() || item.sku,
-            price: price.trim() || item.price,
-            stock,
-            status: statusFromStock(stock),
-            image: image.trim() || item.image,
-          }
-        : item,
-    );
+    const payload = {
+      name: name.trim(),
+      sku: sku.trim(),
+      price: Number(String(price).replace(/[^0-9.]/g, "")) || 0,
+      stock,
+      images: [image.trim()],
+      status: statusFromStock(stock),
+    };
 
-    saveProducts(updatedProducts);
-    router.push("/owner/products");
+    try {
+      const res = await fetch(`http://localhost:5000/api/products/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const json = await res.json();
+      if (!json?.success) throw new Error(json?.message ?? "Update failed");
+
+      router.push("/owner/products");
+    } catch (err: any) {
+      setError(err?.message ?? "Failed to update product");
+    } finally {
+      setSaving(false);
+    }
   }
 
-  if (!product) {
+  if (loading) {
     return (
       <div className="p-8 text-white">
         <p>Loading product...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-8 text-white">
+        <p className="text-red-400">Error: {error}</p>
       </div>
     );
   }
@@ -111,13 +137,16 @@ export default function EditProductPage() {
           className="w-full bg-[#111111] border border-[#2A2A2A] rounded-2xl pl-4 pr-4 py-3 text-white outline-none"
         />
 
+        {error && <p className="text-red-400">{error}</p>}
+
         <div className="flex gap-2">
           <button
             type="button"
             onClick={handleSave}
+            disabled={saving}
             className="px-4 py-2 bg-[#7F1D1D] rounded-2xl text-white"
           >
-            Save
+            {saving ? "Saving..." : "Save"}
           </button>
 
           <button
