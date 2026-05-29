@@ -28,6 +28,7 @@ export default function TrackingPage() {
   const [locationDetails, setLocationDetails] = useState<LocationDetails | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [activeRoute, setActiveRoute] = useState<DeliveryRecord | null>(null);
+  const [showMap, setShowMap] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -163,6 +164,7 @@ export default function TrackingPage() {
       return;
     }
 
+    setShowMap(true);
     await resolveLocation(lat, lon, "manual");
   };
 
@@ -179,8 +181,7 @@ export default function TrackingPage() {
 
         setLatitude(lat.toFixed(6));
         setLongitude(lon.toFixed(6));
-
-        void resolveLocation(lat, lon, "browser");
+        toast.success("Current location coordinates loaded. Click 'Update location' to see the map.");
       },
       () => {
         toast.error("Unable to access your current location. Try entering coordinates manually.");
@@ -244,54 +245,56 @@ export default function TrackingPage() {
                   </span>
                 </div>
 
-                <div className="mt-4 rounded-2xl border border-[#27272A] bg-[#0B0B0B] p-4 min-h-[300px]">
-                  {locationDetails ? (
-                    <div className="flex flex-col h-full justify-between gap-4">
-                      <div>
-                        <p className="text-sm text-[#A1A1AA]">Place</p>
-                        <p className="text-white text-lg font-semibold mt-2">
-                          {locationDetails.displayName}
-                        </p>
-                        <p className="text-[#D5D5D5] mt-3">
-                          {locationDetails.formattedAddress}
-                        </p>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-3 text-sm">
-                        <div className="rounded-xl border border-[#27272A] bg-[#111111] p-3">
-                          <p className="text-[#A1A1AA]">Latitude</p>
-                          <p className="text-white font-semibold mt-2">
-                            {locationDetails.latitude.toFixed(6)}
+                <div className="mt-4 rounded-2xl border border-[#27272A] bg-[#0B0B0B] p-4 min-h-[400px] flex flex-col">
+                  {showMap && locationDetails ? (
+                    <>
+                      <div className="mb-4">
+                        <div>
+                          <p className="text-sm text-[#A1A1AA]">Place</p>
+                          <p className="text-white text-lg font-semibold mt-2">
+                            {locationDetails.displayName}
+                          </p>
+                          <p className="text-[#D5D5D5] mt-1">
+                            {locationDetails.formattedAddress}
                           </p>
                         </div>
 
-                        <div className="rounded-xl border border-[#27272A] bg-[#111111] p-3">
-                          <p className="text-[#A1A1AA]">Longitude</p>
-                          <p className="text-white font-semibold mt-2">
-                            {locationDetails.longitude.toFixed(6)}
-                          </p>
+                        <div className="grid grid-cols-2 gap-3 text-sm mt-3">
+                          <div className="rounded-xl border border-[#27272A] bg-[#111111] p-3">
+                            <p className="text-[#A1A1AA]">Latitude</p>
+                            <p className="text-white font-semibold mt-2">
+                              {locationDetails.latitude.toFixed(6)}
+                            </p>
+                          </div>
+
+                          <div className="rounded-xl border border-[#27272A] bg-[#111111] p-3">
+                            <p className="text-[#A1A1AA]">Longitude</p>
+                            <p className="text-white font-semibold mt-2">
+                              {locationDetails.longitude.toFixed(6)}
+                            </p>
+                          </div>
                         </div>
                       </div>
-                    </div>
+
+                      <div className="flex-1 rounded-xl border border-[#27272A] overflow-hidden">
+                        <iframe
+                          width="100%"
+                          height="100%"
+                          frameBorder="0"
+                          src={`https://www.openstreetmap.org/export/embed.html?bbox=${locationDetails.longitude - 0.01},${locationDetails.latitude - 0.01},${locationDetails.longitude + 0.01},${locationDetails.latitude + 0.01}&layer=mapnik&marker=${locationDetails.latitude},${locationDetails.longitude}`}
+                          style={{minHeight: "300px"}}
+                          title="Location Map"
+                        />
+                      </div>
+                    </>
                   ) : (
                     <div className="flex h-full items-center justify-center text-center px-4">
                       <p className="text-[#A1A1AA] text-lg">
-                        Coordinates will show the nearest place here once you
+                        Coordinates will show the map and location details here once you
                         resolve them.
                       </p>
                     </div>
                   )}
-                </div>
-
-                <div className="mt-4 flex justify-end">
-                  <a
-                    href={mapUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-[#F5D0D0] hover:text-white transition-colors"
-                  >
-                    Open in OpenStreetMap
-                  </a>
                 </div>
               </div>
 
@@ -336,6 +339,7 @@ export default function TrackingPage() {
                       setLatitude("");
                       setLongitude("");
                       setLocationDetails(null);
+                      setShowMap(false);
                     }}
                     className="bg-transparent border border-[#27272A] hover:bg-[#111111]"
                   >

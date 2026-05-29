@@ -2,11 +2,36 @@ const User = require("../models/User");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 
+const PASSWORD_RULES = [
+  { test: (p) => p.length >= 8, message: "Password must be at least 8 characters" },
+  { test: (p) => /[A-Z]/.test(p), message: "Password must include an uppercase letter" },
+  { test: (p) => /[a-z]/.test(p), message: "Password must include a lowercase letter" },
+  { test: (p) => /\d/.test(p), message: "Password must include a number" },
+  {
+    test: (p) => /[!@#$%^&*]/.test(p),
+    message: "Password must include a special character (!@#$%^&*)",
+  },
+];
+
+function validatePassword(password) {
+  if (!password || typeof password !== "string") {
+    return "Password is required";
+  }
+
+  const failedRule = PASSWORD_RULES.find((rule) => !rule.test(password));
+  return failedRule ? failedRule.message : null;
+}
+
 // ================= REGISTER =================
 
 const register = async (req, res) => {
   try {
     const { fullName, email, password, role } = req.body;
+
+    const passwordError = validatePassword(password);
+    if (passwordError) {
+      return res.status(400).json({ message: passwordError });
+    }
 
     // CHECK USER EXISTS
     const userExists = await User.findOne({ email });

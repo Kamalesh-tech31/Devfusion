@@ -3,6 +3,7 @@
 import Link from "next/link";
 
 import { useRouter, usePathname } from "next/navigation";
+import { useLogout } from "@/lib/logout";
 import {
   LayoutDashboard,
   Package,
@@ -46,8 +47,8 @@ const links = [
 
 export default function Sidebar() {
   const router = useRouter();
-
   const pathname = usePathname();
+  const { logout } = useLogout();
 
   return (
     <div className="w-72 min-h-screen bg-black border-r border-[#1f1f1f] p-6">
@@ -79,7 +80,7 @@ export default function Sidebar() {
         })}
       </div>
       <button
-        onClick={() => router.push("/login")}
+        onClick={logout}
         className="w-full mt-8 bg-red-600 hover:bg-red-700 text-white py-3 rounded-2xl transition-all"
       >
         Logout
