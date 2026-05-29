@@ -3,20 +3,22 @@ const dotenv = require("dotenv");
 
 dotenv.config();
 
-const MONGO_URI =
-  process.env.MONGO_URI || "mongodb://localhost:27017/devfusion";
-
 const connectDB = async () => {
   try {
-    // Use unified topology and new URL parser by default in modern mongoose
-    await mongoose.connect(MONGO_URI, {
+    const mongoURI =
+      process.env.MONGO_URI || "mongodb://localhost:27017/devfusion";
+
+    console.log("Connecting to MongoDB...");
+
+    await mongoose.connect(mongoURI, {
       autoIndex: true,
     });
-    console.log("MongoDB connected");
+
+    console.log("MongoDB connected successfully");
+
     return mongoose.connection;
-  } catch (err) {
-    console.error("MongoDB connection error:", err.message);
-    // Exit process if cannot connect — in production you might retry
+  } catch (error) {
+    console.error("MongoDB connection failed:", error.message);
     process.exit(1);
   }
 };

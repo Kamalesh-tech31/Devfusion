@@ -1,33 +1,43 @@
-interface ButtonProps {
-  text: string;
-  onClick?: () => void;
-  type?: "button" | "submit";
+"use client";
+
+import React from "react";
+
+interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  children: React.ReactNode;
 }
 
-export default function Button({
-  text,
-  onClick,
+const Button = ({
+  children,
+  className = "",
   type = "button",
-}: ButtonProps) {
+  ...props
+}: ButtonProps) => {
   return (
     <button
       type={type}
-      onClick={onClick}
-      className="
-        w-full
+      className={`
         bg-[#7F1D1D]
         hover:bg-[#991B1B]
+        active:scale-95
+        disabled:cursor-not-allowed
+        disabled:bg-[#4C1D1D]
         transition-all
-        duration-300
-        text-white
-        py-3
+        duration-150
+        px-4
+        py-2
         rounded-2xl
-        font-semibold
+        text-white
+        font-medium
+        cursor-pointer
         shadow-lg
-        hover:scale-[1.02]
-      "
+        shadow-black/30
+        ${className}
+      `}
+      {...props}
     >
-      {text}
+      {children}
     </button>
   );
-}
+};
+
+export default Button;
