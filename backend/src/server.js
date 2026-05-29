@@ -8,7 +8,8 @@ const errorHandler = require("./middleware/errorHandler");
 const productRoutes = require("./routes/productRoutes");
 const orderRoutes = require("./routes/orderRoutes");
 const inventoryRoutes = require("./routes/inventoryRoutes");
-const deliveryRoutes = require("./routes/deliveryRoutes");
+// Use the frontend-compatible deliveries routes (dashboard/history/etc.)
+const deliveryRoutes = require("./routes/deliveries");
 const analyticsRoutes = require("./routes/analyticsRoutes");
 const authRoutes = require("./routes/authRoutes");
 const locationRoutes = require("./routes/locations");
