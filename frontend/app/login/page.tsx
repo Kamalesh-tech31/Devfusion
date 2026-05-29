@@ -50,7 +50,7 @@ export default function LoginPage() {
         } else if (selectedRole === "Customer") {
           router.push("/customer");
         } else {
-          router.push("/delivery");
+          router.push("/delivery/dashboard");
         }
       } else {
         alert(data.message);

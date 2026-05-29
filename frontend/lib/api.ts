@@ -36,7 +36,7 @@ export interface LocationUpdatePayload {
 }
 
 function getApiBaseUrl() {
-  return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+  return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 }
 
 async function apiRequest<T>(path: string, init?: RequestInit): Promise<T> {
