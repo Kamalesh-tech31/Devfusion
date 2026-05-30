@@ -6,8 +6,11 @@ import toast from "react-hot-toast";
 import Navbar from "@/components/common/Navbar";
 import Sidebar from "@/components/common/Sidebar";
 import DeliveryCard from "@/components/delivery/DeliveryCard";
-import type { DeliveryRecord, DeliveryStatus } from "@/components/delivery/deliveryData";
-import Button from "@/components/ui/Button";
+import type {
+  DeliveryRecord,
+  DeliveryStatus,
+} from "@/components/delivery/deliveryData";
+import button from "@/components/ui/button";
 import { fetchDeliveries, updateDeliveryStatus } from "@/lib/api";
 
 const statusOptions: Record<DeliveryStatus, DeliveryStatus[]> = {
@@ -20,7 +23,9 @@ const statusOptions: Record<DeliveryStatus, DeliveryStatus[]> = {
 
 export default function DeliveriesPage() {
   const [deliveries, setDeliveries] = useState<DeliveryRecord[]>([]);
-  const [selectedStatuses, setSelectedStatuses] = useState<Record<string, DeliveryStatus>>({});
+  const [selectedStatuses, setSelectedStatuses] = useState<
+    Record<string, DeliveryStatus>
+  >({});
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -34,12 +39,16 @@ export default function DeliveriesPage() {
         if (isMounted) {
           setDeliveries(data);
           setSelectedStatuses(
-            Object.fromEntries(data.map((item) => [item.id, item.status])) as Record<string, DeliveryStatus>
+            Object.fromEntries(
+              data.map((item) => [item.id, item.status]),
+            ) as Record<string, DeliveryStatus>,
           );
         }
       } catch (err) {
         if (isMounted) {
-          setError(err instanceof Error ? err.message : "Unable to load deliveries.");
+          setError(
+            err instanceof Error ? err.message : "Unable to load deliveries.",
+          );
         }
       } finally {
         if (isMounted) {
@@ -56,11 +65,11 @@ export default function DeliveriesPage() {
   }, []);
 
   const activeCount = deliveries.filter(
-    (item) => item.status !== "Delivered" && item.status !== "Returned"
+    (item) => item.status !== "Delivered" && item.status !== "Returned",
   ).length;
 
   const completedCount = deliveries.filter(
-    (item) => item.status === "Delivered"
+    (item) => item.status === "Delivered",
   ).length;
 
   const handleUpdateStatus = async (id: string) => {
@@ -76,7 +85,7 @@ export default function DeliveriesPage() {
       const updatedDelivery = await updateDeliveryStatus(id, nextStatus);
 
       setDeliveries((prev) =>
-        prev.map((item) => (item.id === id ? updatedDelivery : item))
+        prev.map((item) => (item.id === id ? updatedDelivery : item)),
       );
       setSelectedStatuses((prev) => ({
         ...prev,
@@ -85,7 +94,11 @@ export default function DeliveriesPage() {
 
       toast.success(`${current.customer} updated to ${nextStatus}`);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Unable to update delivery status.");
+      toast.error(
+        err instanceof Error
+          ? err.message
+          : "Unable to update delivery status.",
+      );
     }
   };
 
@@ -170,7 +183,8 @@ export default function DeliveriesPage() {
                           onChange={(event) =>
                             setSelectedStatuses((prev) => ({
                               ...prev,
-                              [delivery.id]: event.target.value as DeliveryStatus,
+                              [delivery.id]: event.target
+                                .value as DeliveryStatus,
                             }))
                           }
                           className="flex-1 bg-[#0B0B0B] border border-[#27272A] text-white rounded-2xl px-3 py-3 outline-none"
@@ -182,16 +196,20 @@ export default function DeliveriesPage() {
                               </option>
                             ))
                           ) : (
-                            <option value={delivery.status}>{delivery.status}</option>
+                            <option value={delivery.status}>
+                              {delivery.status}
+                            </option>
                           )}
                         </select>
 
-                        <Button
+                        <button
                           onClick={() => void handleUpdateStatus(delivery.id)}
-                          disabled={selectedStatuses[delivery.id] === delivery.status}
+                          disabled={
+                            selectedStatuses[delivery.id] === delivery.status
+                          }
                         >
                           Save update
-                        </Button>
+                        </button>
                       </div>
 
                       <p className="text-sm text-[#D5D5D5] mt-3">

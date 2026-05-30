@@ -87,18 +87,32 @@ export default function DeliveryPage() {
           throw new Error(`Failed to fetch agents (${agentsRes.status})`);
         }
 
-        const deliveriesJson = (await deliveriesRes.json()) as ApiResponse;
+        const deliveriesJson = await deliveriesRes.json();
         const agentsJson = await agentsRes.json();
 
-        if (!deliveriesJson?.success) {
+        let deliveryData: Delivery[] = [];
+        if (Array.isArray(deliveriesJson)) {
+          deliveryData = deliveriesJson;
+        } else if (
+          deliveriesJson?.success === true &&
+          Array.isArray(deliveriesJson.data)
+        ) {
+          deliveryData = deliveriesJson.data;
+        } else if (Array.isArray(deliveriesJson?.data)) {
+          deliveryData = deliveriesJson.data;
+        } else {
           throw new Error(
             deliveriesJson?.message ?? "Invalid deliveries response",
           );
         }
 
-        setDeliveries(deliveriesJson.data ?? []);
+        setDeliveries(deliveryData);
         setDeliveryAgents(
-          Array.isArray(agentsJson.data) ? agentsJson.data : [],
+          Array.isArray(agentsJson)
+            ? agentsJson
+            : Array.isArray(agentsJson.data)
+              ? agentsJson.data
+              : [],
         );
       } catch (err: any) {
         setError(err?.message ?? "Unable to load delivery data");

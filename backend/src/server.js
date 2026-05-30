@@ -32,6 +32,7 @@ const deliveryRoutes = require("./routes/deliveries");
 const analyticsRoutes = require("./routes/analyticsRoutes");
 const authRoutes = require("./routes/authRoutes");
 const locationRoutes = require("./routes/locations");
+const deliveryAgentRoutes = require("./routes/deliveryAgents");
 
 /* =========================
    App Setup
@@ -82,11 +83,11 @@ app.use("/api/auth", authRoutes);
 /* =========================
    Customer APIs
 ========================= */
-app.use("/api/products", customerProductRoutes);
-app.use("/api/orders", customerOrderRoutes);
+app.use("/api/customer/products", customerProductRoutes);
+app.use("/api/customer/orders", customerOrderRoutes);
 app.use("/api/tracking", orderTrackingRoutes);
 app.use("/api/delivery", deliveryTrackingRoutes);
-app.use("/api/analytics", customerAnalyticsRoutes);
+app.use("/api/customer/analytics", customerAnalyticsRoutes);
 app.use("/api/stats", dashboardStatsRoutes);
 
 /* =========================
@@ -96,6 +97,7 @@ app.use("/api/products", productRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/inventory", inventoryRoutes);
 app.use("/api/deliveries", deliveryRoutes);
+app.use("/api/delivery-agents", deliveryAgentRoutes);
 app.use("/api/analytics", analyticsRoutes);
 app.use("/api/location-updates", locationRoutes);
 

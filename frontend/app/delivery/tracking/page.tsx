@@ -6,7 +6,6 @@ import toast from "react-hot-toast";
 import Navbar from "@/components/common/Navbar";
 import Sidebar from "@/components/common/Sidebar";
 import type { DeliveryRecord } from "@/components/delivery/deliveryData";
-import Button from "@/components/ui/Button";
 import { fetchDashboard, saveLocationUpdate } from "@/lib/api";
 
 interface LocationDetails {
@@ -25,7 +24,8 @@ interface LocationDetails {
 export default function TrackingPage() {
   const [latitude, setLatitude] = useState("");
   const [longitude, setLongitude] = useState("");
-  const [locationDetails, setLocationDetails] = useState<LocationDetails | null>(null);
+  const [locationDetails, setLocationDetails] =
+    useState<LocationDetails | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [activeRoute, setActiveRoute] = useState<DeliveryRecord | null>(null);
   const [showMap, setShowMap] = useState(false);
@@ -42,7 +42,11 @@ export default function TrackingPage() {
         }
       } catch (err) {
         if (isMounted) {
-          toast.error(err instanceof Error ? err.message : "Unable to load the active route.");
+          toast.error(
+            err instanceof Error
+              ? err.message
+              : "Unable to load the active route.",
+          );
         }
       }
     }
@@ -57,7 +61,7 @@ export default function TrackingPage() {
   const resolveLocation = async (
     lat: number,
     lon: number,
-    source: "manual" | "browser"
+    source: "manual" | "browser",
   ) => {
     setIsLoading(true);
 
@@ -69,7 +73,7 @@ export default function TrackingPage() {
             Accept: "application/json",
             "User-Agent": "Devfusion-LogiTrack/1.0",
           },
-        }
+        },
       );
 
       if (!response.ok) {
@@ -116,9 +120,12 @@ export default function TrackingPage() {
       setLocationDetails(result);
 
       if (!activeRoute) {
-        toast("Location resolved locally, but no active route is available to sync.", {
-          icon: "ℹ️",
-        });
+        toast(
+          "Location resolved locally, but no active route is available to sync.",
+          {
+            icon: "ℹ️",
+          },
+        );
         return;
       }
 
@@ -138,7 +145,9 @@ export default function TrackingPage() {
       toast.success("Location resolved and synced to the backend.");
     } catch (error) {
       console.error(error);
-      toast.error("Unable to resolve this location. Check the coordinates and try again.");
+      toast.error(
+        "Unable to resolve this location. Check the coordinates and try again.",
+      );
       setLocationDetails(null);
     } finally {
       setIsLoading(false);
@@ -160,7 +169,9 @@ export default function TrackingPage() {
     }
 
     if (lat < -90 || lat > 90 || lon < -180 || lon > 180) {
-      toast.error("Coordinates are out of range. Use valid latitude and longitude values.");
+      toast.error(
+        "Coordinates are out of range. Use valid latitude and longitude values.",
+      );
       return;
     }
 
@@ -181,14 +192,18 @@ export default function TrackingPage() {
 
         setLatitude(lat.toFixed(6));
         setLongitude(lon.toFixed(6));
-        toast.success("Current location coordinates loaded. Click 'Update location' to see the map.");
+        toast.success(
+          "Current location coordinates loaded. Click 'Update location' to see the map.",
+        );
       },
       () => {
-        toast.error("Unable to access your current location. Try entering coordinates manually.");
+        toast.error(
+          "Unable to access your current location. Try entering coordinates manually.",
+        );
       },
       {
         enableHighAccuracy: true,
-      }
+      },
     );
   };
 
@@ -241,7 +256,9 @@ export default function TrackingPage() {
                   </div>
 
                   <span className="text-sm text-[#A1A1AA]">
-                    {locationDetails ? `Source: ${locationDetails.source}` : "Awaiting input"}
+                    {locationDetails
+                      ? `Source: ${locationDetails.source}`
+                      : "Awaiting input"}
                   </span>
                 </div>
 
@@ -282,7 +299,7 @@ export default function TrackingPage() {
                           height="100%"
                           frameBorder="0"
                           src={`https://www.openstreetmap.org/export/embed.html?bbox=${locationDetails.longitude - 0.01},${locationDetails.latitude - 0.01},${locationDetails.longitude + 0.01},${locationDetails.latitude + 0.01}&layer=mapnik&marker=${locationDetails.latitude},${locationDetails.longitude}`}
-                          style={{minHeight: "300px"}}
+                          style={{ minHeight: "300px" }}
                           title="Location Map"
                         />
                       </div>
@@ -290,8 +307,8 @@ export default function TrackingPage() {
                   ) : (
                     <div className="flex h-full items-center justify-center text-center px-4">
                       <p className="text-[#A1A1AA] text-lg">
-                        Coordinates will show the map and location details here once you
-                        resolve them.
+                        Coordinates will show the map and location details here
+                        once you resolve them.
                       </p>
                     </div>
                   )}
@@ -322,19 +339,22 @@ export default function TrackingPage() {
                 </div>
 
                 <div className="flex flex-wrap gap-3 pt-2">
-                  <Button onClick={() => void handleUpdateLocation()} disabled={isLoading}>
+                  <button
+                    onClick={() => void handleUpdateLocation()}
+                    disabled={isLoading}
+                  >
                     {isLoading ? "Resolving..." : "Update location"}
-                  </Button>
+                  </button>
 
-                  <Button
+                  <button
                     onClick={handleUseCurrentLocation}
                     disabled={isLoading}
                     className="bg-transparent border border-[#27272A] hover:bg-[#111111]"
                   >
                     Use current location
-                  </Button>
+                  </button>
 
-                  <Button
+                  <button
                     onClick={() => {
                       setLatitude("");
                       setLongitude("");
@@ -344,7 +364,7 @@ export default function TrackingPage() {
                     className="bg-transparent border border-[#27272A] hover:bg-[#111111]"
                   >
                     Clear
-                  </Button>
+                  </button>
                 </div>
 
                 <div className="bg-[#111111] border border-[#27272A] rounded-2xl p-4">
@@ -353,7 +373,8 @@ export default function TrackingPage() {
                     {locationDetails?.formattedAddress || "Awaiting GPS input"}
                   </p>
                   <p className="text-sm text-[#D5D5D5] mt-3">
-                    Last resolved: {locationDetails?.timestamp || "No location resolved yet"}
+                    Last resolved:{" "}
+                    {locationDetails?.timestamp || "No location resolved yet"}
                   </p>
                 </div>
               </div>
