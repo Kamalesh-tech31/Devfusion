@@ -2,32 +2,56 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { getAgents, saveAgents, nextId, Agent } from "@/lib/dashboardData";
 
 export default function AddAgentPage() {
   const router = useRouter();
   const [name, setName] = useState("");
-  const [deliveries, setDeliveries] = useState(0);
+  const [contact, setContact] = useState("");
+  const [vehicle, setVehicle] = useState("");
   const [status, setStatus] = useState("Active");
+  const [error, setError] = useState<string | null>(null);
 
-  function handleSave() {
-    const agents = getAgents();
-    const newAgent: Agent = {
-      id: nextId(agents),
-      name: name.trim() || "New Agent",
-      deliveries: deliveries || 0,
-      status,
-    };
+  const handleSave = async () => {
+    if (!name.trim() || !contact.trim()) {
+      setError("Please provide both agent name and contact information.");
+      return;
+    }
 
-    saveAgents([...agents, newAgent]);
-    router.push("/owner/delivery");
-  }
+    try {
+      const response = await fetch(
+        "http://localhost:5000/api/delivery-agents",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            name: name.trim(),
+            contact: contact.trim(),
+            vehicle: vehicle.trim(),
+            isAvailable: status === "Active",
+          }),
+        },
+      );
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.message || "Unable to add agent");
+      }
+
+      router.push("/owner/delivery");
+    } catch (err: any) {
+      setError(err?.message ?? "Something went wrong while adding the agent.");
+    }
+  };
 
   return (
     <div className="p-8">
       <h1 className="text-3xl font-bold text-white mb-4">Add Agent</h1>
 
       <div className="space-y-4 max-w-md">
+        {error && <p className="text-red-400">{error}</p>}
+
         <input
           type="text"
           placeholder="Agent name"
@@ -37,21 +61,31 @@ export default function AddAgentPage() {
         />
 
         <input
-          type="number"
-          min={0}
-          placeholder="Deliveries assigned"
-          value={deliveries}
-          onChange={(e) => setDeliveries(Number(e.target.value))}
+          type="text"
+          placeholder="Contact email or phone"
+          value={contact}
+          onChange={(e) => setContact(e.target.value)}
           className="w-full bg-[#111111] border border-[#2A2A2A] rounded-2xl pl-4 pr-4 py-3 text-white outline-none"
         />
 
+        <input
+          type="text"
+          placeholder="Vehicle details (optional)"
+          value={vehicle}
+          onChange={(e) => setVehicle(e.target.value)}
+          className="w-full bg-[#111111] border border-[#2A2A2A] rounded-2xl pl-4 pr-4 py-3 text-white outline-none"
+        />
+
+        <label className="sr-only" htmlFor="agent-status">
+          Agent status
+        </label>
         <select
+          id="agent-status"
           value={status}
           onChange={(e) => setStatus(e.target.value)}
           className="w-full bg-[#111111] border border-[#2A2A2A] rounded-2xl px-4 py-3 text-white outline-none"
         >
           <option value="Active">Active</option>
-          <option value="Returning">Returning</option>
           <option value="Paused">Paused</option>
         </select>
 

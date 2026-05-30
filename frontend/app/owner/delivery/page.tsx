@@ -8,6 +8,7 @@ import DeliveryTable from "@/components/owner/DeliveryTable";
 import { Truck, User, PackageCheck, Clock3 } from "lucide-react";
 
 const API_URL = "http://localhost:5000/api/deliveries";
+const DELIVERY_AGENTS_URL = "http://localhost:5000/api/delivery-agents";
 
 interface Tracking {
   status: string;
@@ -41,7 +42,7 @@ interface DeliveryAgent {
   name: string;
   contact: string;
   isAvailable: boolean;
-  vehicle: string;
+  vehicle?: string;
 }
 
 interface Delivery {
@@ -62,54 +63,76 @@ interface ApiResponse {
 export default function DeliveryPage() {
   const router = useRouter();
   const [deliveries, setDeliveries] = useState<Delivery[]>([]);
+  const [deliveryAgents, setDeliveryAgents] = useState<DeliveryAgent[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    async function fetchDeliveries() {
+    async function fetchData() {
       setLoading(true);
       setError(null);
 
       try {
-        const response = await fetch(API_URL);
-        if (!response.ok) {
-          throw new Error(`Failed to fetch deliveries (${response.status})`);
+        const [deliveriesRes, agentsRes] = await Promise.all([
+          fetch(API_URL),
+          fetch(DELIVERY_AGENTS_URL),
+        ]);
+
+        if (!deliveriesRes.ok) {
+          throw new Error(
+            `Failed to fetch deliveries (${deliveriesRes.status})`,
+          );
+        }
+        if (!agentsRes.ok) {
+          throw new Error(`Failed to fetch agents (${agentsRes.status})`);
         }
 
-        const json = (await response.json()) as ApiResponse;
-        if (!json?.success) {
-          throw new Error(json?.message ?? "Invalid API response");
+        const deliveriesJson = (await deliveriesRes.json()) as ApiResponse;
+        const agentsJson = await agentsRes.json();
+
+        if (!deliveriesJson?.success) {
+          throw new Error(
+            deliveriesJson?.message ?? "Invalid deliveries response",
+          );
         }
 
-        setDeliveries(json.data ?? []);
+        setDeliveries(deliveriesJson.data ?? []);
+        setDeliveryAgents(
+          Array.isArray(agentsJson.data) ? agentsJson.data : [],
+        );
       } catch (err: any) {
-        setError(err?.message ?? "Unable to load deliveries");
+        setError(err?.message ?? "Unable to load delivery data");
       } finally {
         setLoading(false);
       }
     }
 
-    fetchDeliveries();
+    fetchData();
   }, []);
 
   // Calculate stats
   const totalDeliveries = deliveries.length;
 
   const uniqueAgents = Array.from(
-    new Map(
-      deliveries
+    new Map<string, DeliveryAgent>([
+      ...deliveryAgents.map(
+        (agent) => [agent._id, agent] as [string, DeliveryAgent],
+      ),
+      ...deliveries
         .filter((d) => d.agent)
-        .map((d) => [d.agent!._id, d.agent!])
-    ).values()
+        .map((d) => [d.agent!._id, d.agent!] as [string, DeliveryAgent]),
+    ]).values(),
   );
-  const activeAgents = uniqueAgents.filter((agent) => !agent.isAvailable).length;
+  const activeAgents = uniqueAgents.filter(
+    (agent) => !agent.isAvailable,
+  ).length;
 
   const pendingOrders = deliveries.filter(
-    (d) => d.status === "pending" || d.status === "assigned"
+    (d) => d.status === "pending" || d.status === "assigned",
   ).length;
 
   const deliveredCount = deliveries.filter(
-    (d) => d.status === "delivered"
+    (d) => d.status === "delivered",
   ).length;
   const successRate =
     deliveries.length > 0
@@ -212,7 +235,7 @@ export default function DeliveryPage() {
           {uniqueAgents.length > 0 ? (
             uniqueAgents.map((agent) => {
               const agentDeliveries = deliveries.filter(
-                (d) => d.agent?._id === agent._id
+                (d) => d.agent?._id === agent._id,
               ).length;
               const agentStatus = agent.isAvailable ? "Available" : "Active";
 

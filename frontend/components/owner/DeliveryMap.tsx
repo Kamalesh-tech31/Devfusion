@@ -7,7 +7,7 @@ interface DeliveryAgent {
   name: string;
   contact: string;
   isAvailable: boolean;
-  vehicle: string;
+  vehicle?: string;
 }
 
 interface DeliveryMapProps {
