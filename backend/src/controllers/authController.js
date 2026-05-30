@@ -1,11 +1,21 @@
 const User = require("../models/User");
+const DeliveryAgent = require("../models/DeliveryAgent");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 
 const PASSWORD_RULES = [
-  { test: (p) => p.length >= 8, message: "Password must be at least 8 characters" },
-  { test: (p) => /[A-Z]/.test(p), message: "Password must include an uppercase letter" },
-  { test: (p) => /[a-z]/.test(p), message: "Password must include a lowercase letter" },
+  {
+    test: (p) => p.length >= 8,
+    message: "Password must be at least 8 characters",
+  },
+  {
+    test: (p) => /[A-Z]/.test(p),
+    message: "Password must include an uppercase letter",
+  },
+  {
+    test: (p) => /[a-z]/.test(p),
+    message: "Password must include a lowercase letter",
+  },
   { test: (p) => /\d/.test(p), message: "Password must include a number" },
   {
     test: (p) => /[!@#$%^&*]/.test(p),
@@ -53,6 +63,15 @@ const register = async (req, res) => {
       password: hashedPassword,
       role,
     });
+
+    if (role === "Delivery Agent") {
+      await DeliveryAgent.create({
+        name: fullName,
+        contact: email,
+        isAvailable: true,
+        vehicle: "",
+      });
+    }
 
     // CREATE TOKEN
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {

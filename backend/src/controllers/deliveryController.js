@@ -11,8 +11,12 @@ const getDeliveryFilter = (req) => {
 
 const getAllDeliveries = async (req, res, next) => {
   try {
-    const deliveries = await Delivery.find().sort({ id: 1 }).lean();
-    res.json(deliveries);
+    const deliveries = await Delivery.find()
+      .populate("order")
+      .populate("agent")
+      .sort({ id: 1 })
+      .lean();
+    res.json({ success: true, count: deliveries.length, data: deliveries });
   } catch (error) {
     next(error);
   }
