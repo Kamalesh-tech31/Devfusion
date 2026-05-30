@@ -1,15 +1,21 @@
 {
   "name": "devfusion-backend",
   "version": "1.0.0",
-  "description": "",
+  "description": "Backend for DevFusion + LogiTrack",
   "private": true,
   "main": "src/server.js",
   "type": "commonjs",
   "scripts": {
     "start": "node src/server.js",
-    "dev": "nodemon src/server.js"
+    "dev": "nodemon src/server.js",
+    "test": "jest"
   },
-  "keywords": [],
+  "keywords": [
+    "logistic",
+    "tracking",
+    "delivery",
+    "mongodb"
+  ],
   "author": "",
   "license": "ISC",
   "dependencies": {
@@ -17,11 +23,13 @@
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
+    "joi": "^17.11.0",
     "jsonwebtoken": "^9.0.3",
     "mongodb": "^6.0.0",
     "mongoose": "^9.6.2"
   },
   "devDependencies": {
-    "nodemon": "^3.1.14"
+    "nodemon": "^3.1.14",
+    "jest": "^30.0.0"
   }
 }

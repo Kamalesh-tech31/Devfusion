@@ -209,7 +209,9 @@ export default function RegisterPage() {
           {/* Submit Button */}
           <button
             type="submit"
-            disabled={!isPasswordValid(password) || password !== confirmPassword}
+            disabled={
+              !isPasswordValid(password) || password !== confirmPassword
+            }
             className="w-full bg-[#7F1D1D] hover:bg-[#991B1B] disabled:bg-gray-700 disabled:cursor-not-allowed transition-all py-4 rounded-2xl text-white font-semibold flex items-center justify-center gap-2 shadow-lg shadow-[#7F1D1D]/20"
           >
             Create Account

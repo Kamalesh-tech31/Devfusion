@@ -6,7 +6,15 @@ dotenv.config();
 const connectDB = async () => {
   try {
     const mongoURI =
-      process.env.MONGO_URI || "mongodb://localhost:27017/devfusion";
+      process.env.MONGO_URI ||
+      process.env.MONGODB_URI ||
+      "mongodb://localhost:27017/devfusion";
+
+    if (!mongoURI) {
+      throw new Error(
+        "MongoDB connection string is missing in environment variables",
+      );
+    }
 
     console.log("Connecting to MongoDB...");
 
