@@ -1,6 +1,5 @@
 "use client"
-
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -13,7 +12,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { orders } from "@/lib/mock-data"
+import { Order } from "@/lib/mock-data"
+import { fetchOrders } from "@/lib/api"
 import { Search, Filter, Eye, Package, Truck, CheckCircle } from "lucide-react"
 
 const statusConfig = {
@@ -23,8 +23,29 @@ const statusConfig = {
 }
 
 export default function OrdersPage() {
+  const [orders, setOrders] = useState<Order[]>([])
   const [searchQuery, setSearchQuery] = useState("")
   const [statusFilter, setStatusFilter] = useState<string>("all")
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    const loadOrders = async () => {
+      setLoading(true)
+      setError(null)
+
+      try {
+        const ordersData = await fetchOrders()
+        setOrders(ordersData)
+      } catch (fetchError) {
+        setError(fetchError instanceof Error ? fetchError.message : "Failed to load orders")
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadOrders()
+  }, [])
 
   const filteredOrders = orders.filter((order) => {
     const matchesSearch = 
@@ -137,53 +158,66 @@ export default function OrdersPage() {
           </div>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Order ID</TableHead>
-                <TableHead>Customer</TableHead>
-                <TableHead>Date</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Amount</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredOrders.map((order) => {
-                const status = statusConfig[order.status]
-                const StatusIcon = status.icon
-                return (
-                  <TableRow key={order.id}>
-                    <TableCell className="font-medium">{order.id}</TableCell>
-                    <TableCell>{order.customer}</TableCell>
-                    <TableCell>{new Date(order.date).toLocaleDateString()}</TableCell>
-                    <TableCell>
-                      <Badge className={`gap-1.5 ${status.color}`} variant="secondary">
-                        <StatusIcon className="h-3 w-3" />
-                        {status.label}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right font-semibold">
-                      ₹{order.amount.toLocaleString()}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Button variant="ghost" size="sm" className="h-8 gap-1.5">
-                        <Eye className="h-4 w-4" />
-                        View
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                )
-              })}
-            </TableBody>
-          </Table>
-          {filteredOrders.length === 0 && (
-            <div className="flex flex-col items-center justify-center py-12">
-              <p className="text-lg font-medium text-foreground">No orders found</p>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Try adjusting your search or filter criteria
-              </p>
+          {loading ? (
+            <div className="flex items-center justify-center py-12">
+              <p className="text-sm text-muted-foreground">Loading orders...</p>
             </div>
+          ) : error ? (
+            <div className="flex flex-col items-center justify-center py-12">
+              <p className="text-lg font-medium text-foreground">Unable to load orders</p>
+              <p className="mt-1 text-sm text-muted-foreground">{error}</p>
+            </div>
+          ) : (
+            <>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Order ID</TableHead>
+                    <TableHead>Customer</TableHead>
+                    <TableHead>Date</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Amount</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredOrders.map((order) => {
+                    const status = statusConfig[order.status]
+                    const StatusIcon = status.icon
+                    return (
+                      <TableRow key={order.id}>
+                        <TableCell className="font-medium">{order.id}</TableCell>
+                        <TableCell>{order.customer}</TableCell>
+                        <TableCell>{new Date(order.date).toLocaleDateString()}</TableCell>
+                        <TableCell>
+                          <Badge className={`gap-1.5 ${status.color}`} variant="secondary">
+                            <StatusIcon className="h-3 w-3" />
+                            {status.label}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right font-semibold">
+                          ₹{order.amount.toLocaleString()}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button variant="ghost" size="sm" className="h-8 gap-1.5">
+                            <Eye className="h-4 w-4" />
+                            View
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    )
+                  })}
+                </TableBody>
+              </Table>
+              {filteredOrders.length === 0 && (
+                <div className="flex flex-col items-center justify-center py-12">
+                  <p className="text-lg font-medium text-foreground">No orders found</p>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Try adjusting your search or filter criteria
+                  </p>
+                </div>
+              )}
+            </>
           )}
         </CardContent>
       </Card>

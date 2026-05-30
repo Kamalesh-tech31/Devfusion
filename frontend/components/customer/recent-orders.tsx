@@ -1,7 +1,11 @@
+"use client"
+
+import { useEffect, useState } from "react"
 import Link from "next/link"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { orders } from "@/lib/mock-data"
+import { fetchOrders } from "@/lib/api"
 
 const statusStyles = {
   delivered: "bg-emerald-100 text-emerald-700 hover:bg-emerald-100",
@@ -10,6 +14,26 @@ const statusStyles = {
 }
 
 export function RecentOrders() {
+  const [recentOrders, setRecentOrders] = useState(orders.slice(0, 5))
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const loadOrders = async () => {
+      try {
+        const ordersData = await fetchOrders()
+        if (Array.isArray(ordersData)) {
+          setRecentOrders(ordersData.slice(0, 5))
+        }
+      } catch (error) {
+        // Silently fall back to defaults
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadOrders()
+  }, [])
+
   return (
     <Card className="border-none shadow-sm">
       <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -30,12 +54,12 @@ export function RecentOrders() {
               </tr>
             </thead>
             <tbody>
-              {orders.map((order) => (
+              {recentOrders.map((order) => (
                 <tr key={order.id} className="border-b border-border last:border-0">
-                  <td className="px-6 py-4 font-medium text-foreground">#{order.id}</td>
+                  <td className="px-6 py-4 font-medium text-foreground">{order.id}</td>
                   <td className="px-6 py-4 text-muted-foreground">{order.customer}</td>
                   <td className="px-6 py-4">
-                    <Badge variant="secondary" className={statusStyles[order.status]}>
+                    <Badge variant="secondary" className={statusStyles[order.status] || "bg-gray-100 text-gray-700"}>
                       {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
                     </Badge>
                   </td>

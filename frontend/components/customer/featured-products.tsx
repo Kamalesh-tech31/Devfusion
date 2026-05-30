@@ -1,12 +1,37 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import Image from "next/image"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { products } from "@/lib/mock-data"
+import { fetchProducts } from "@/lib/api"
 import Link from "next/link"
 
 export function FeaturedProducts() {
+  const [featuredProducts, setFeaturedProducts] = useState(products.slice(0, 4))
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const loadFeatured = async () => {
+      try {
+        const productsData = await fetchProducts()
+        if (Array.isArray(productsData)) {
+          const featured = productsData
+            .filter((p: any) => p.featured)
+            .slice(0, 4)
+          setFeaturedProducts(featured.length > 0 ? featured : productsData.slice(0, 4))
+        }
+      } catch (error) {
+        // Silently fall back to defaults
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadFeatured()
+  }, [])
+
   return (
     <section>
       <div className="mb-4 flex items-center justify-between">
@@ -16,7 +41,7 @@ export function FeaturedProducts() {
         </Link>
       </div>
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        {products.map((product) => (
+        {featuredProducts.map((product) => (
           <Card key={product.id} className="group overflow-hidden border-none shadow-sm">
             <CardContent className="p-0">
               <div className="relative aspect-square overflow-hidden bg-zinc-900">
