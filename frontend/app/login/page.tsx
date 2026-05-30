@@ -4,6 +4,7 @@ import { useState } from "react";
 import { BriefcaseBusiness, Truck, User, ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { PasswordInput } from "@/components/common/PasswordInput";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -94,8 +95,7 @@ export default function LoginPage() {
           <div>
             <label className="block text-sm mb-2 text-gray-300">Password</label>
 
-            <input
-              type="password"
+            <PasswordInput
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"

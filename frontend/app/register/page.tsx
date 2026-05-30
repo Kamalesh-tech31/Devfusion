@@ -3,6 +3,11 @@
 import { useState } from "react";
 import { BriefcaseBusiness, Truck, User, ArrowRight } from "lucide-react";
 import { useRouter } from "next/navigation";
+import {
+  isPasswordValid,
+  PASSWORD_REQUIREMENTS,
+} from "@/lib/passwordValidation";
+import { PasswordInput } from "@/components/common/PasswordInput";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -15,6 +20,11 @@ export default function RegisterPage() {
 
   const handleRegister = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+
+    if (!isPasswordValid(password)) {
+      alert("Please meet all password requirements before continuing.");
+      return;
+    }
 
     if (password !== confirmPassword) {
       alert("Passwords do not match");
@@ -102,13 +112,30 @@ export default function RegisterPage() {
           <div>
             <label className="text-gray-300 text-sm block mb-2">Password</label>
 
-            <input
-              type="password"
+            <PasswordInput
               placeholder="Create password"
               value={password}
+              minLength={8}
               onChange={(e) => setPassword(e.target.value)}
               className="w-full bg-black/40 border border-gray-700 focus:border-[#7F1D1D] rounded-2xl px-5 py-4 text-white outline-none transition"
             />
+
+            <ul className="mt-3 space-y-1">
+              {PASSWORD_REQUIREMENTS.map((rule) => {
+                const met = rule.test(password);
+
+                return (
+                  <li
+                    key={rule.id}
+                    className={`text-xs ${
+                      met ? "text-green-400" : "text-gray-500"
+                    }`}
+                  >
+                    {met ? "✓" : "•"} {rule.label}
+                  </li>
+                );
+              })}
+            </ul>
           </div>
 
           {/* Confirm Password */}
@@ -117,8 +144,7 @@ export default function RegisterPage() {
               Confirm Password
             </label>
 
-            <input
-              type="password"
+            <PasswordInput
               placeholder="Confirm password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
@@ -183,7 +209,8 @@ export default function RegisterPage() {
           {/* Submit Button */}
           <button
             type="submit"
-            className="w-full bg-[#7F1D1D] hover:bg-[#991B1B] transition-all py-4 rounded-2xl text-white font-semibold flex items-center justify-center gap-2 shadow-lg shadow-[#7F1D1D]/20"
+            disabled={!isPasswordValid(password) || password !== confirmPassword}
+            className="w-full bg-[#7F1D1D] hover:bg-[#991B1B] disabled:bg-gray-700 disabled:cursor-not-allowed transition-all py-4 rounded-2xl text-white font-semibold flex items-center justify-center gap-2 shadow-lg shadow-[#7F1D1D]/20"
           >
             Create Account
             <ArrowRight size={18} />

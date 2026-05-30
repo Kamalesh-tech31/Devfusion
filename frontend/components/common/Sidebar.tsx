@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useLogout } from "@/lib/logout";
 
 import {
   DollarSign,
@@ -9,10 +10,12 @@ import {
   LayoutDashboard,
   MapPinned,
   Package,
+  LogOut,
 } from "lucide-react";
 
 const Sidebar = () => {
   const pathname = usePathname();
+  const { logout } = useLogout();
 
   const navItems = [
     {
@@ -83,6 +86,18 @@ const Sidebar = () => {
               </Link>
             );
           })}
+        </div>
+
+        <div className="mt-4 lg:mt-6 pt-4 border-t border-[#27272A]">
+          <button
+            onClick={logout}
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl bg-red-600 hover:bg-red-700 text-white transition-all duration-200 font-medium"
+            title="Logout"
+            aria-label="Logout"
+          >
+            <LogOut size={18} />
+            <span className="text-sm">Logout</span>
+          </button>
         </div>
       </div>
     </aside>
