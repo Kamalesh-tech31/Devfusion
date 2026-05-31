@@ -1,8 +1,8 @@
-import { StatsOverview } from "@/components/customer/stats-overview"
-import { FeaturedProducts } from "@/components/customer/featured-products"
-import { RecentOrders } from "@/components/customer/recent-orders"
-import { OrderTracking } from "@/components/customer/order-tracking"
-import { DeliveryMap } from "@/components/customer/delivery-map"
+import { StatsOverview } from "@/components/customer/stats-overview";
+import { FeaturedProducts } from "@/components/customer/featured-products";
+import { RecentOrders } from "@/components/customer/recent-orders";
+import { OrderTracking } from "@/components/customer/order-tracking";
+import { DeliveryMap } from "@/components/customer/delivery-map";
 
 export default function CustomerDashboard() {
   return (
@@ -18,5 +18,5 @@ export default function CustomerDashboard() {
 
       <DeliveryMap />
     </div>
-  )
+  );
 }

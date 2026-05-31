@@ -28,7 +28,7 @@ export function OrderTracking() {
   useEffect(() => {
     const loadTracking = async () => {
       try {
-        const orders = await fetchCustomerOrders();
+        const orders = await fetchOrders();
         if (Array.isArray(orders) && orders.length > 0) {
           const activeOrder =
             orders.find((o: any) => o.status !== "delivered") || orders[0];
