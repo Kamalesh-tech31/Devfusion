@@ -59,35 +59,49 @@ async function apiRequest<T>(path: string, init?: RequestInit): Promise<T> {
     );
   }
 
-  return (await response.json()) as T;
+  const json = await response.json();
+  if (json && typeof json === "object" && "data" in json) {
+    return (json as any).data as T;
+  }
+
+  return json as T;
 }
 
 /* =========================
    Existing APIs
 ========================= */
 
-export async function fetchOrders() {
-  return apiRequest("/api/orders");
+export async function fetchOrders(): Promise<any[]> {
+  return apiRequest<any[]>("/api/orders");
 }
 
-export async function fetchProducts() {
-  return apiRequest("/api/products");
+export async function fetchProducts(): Promise<any[]> {
+  return apiRequest<any[]>("/api/products");
 }
 
-export async function fetchTrackingByOrderId(orderId: string) {
-  return apiRequest(`/api/tracking/order/${orderId}`);
+// Customer-specific endpoints (public-facing)
+export async function fetchCustomerOrders(): Promise<any[]> {
+  return apiRequest<any[]>("/api/customer/orders");
 }
 
-export async function fetchDeliveryByOrderId(orderId: string) {
-  return apiRequest(`/api/delivery/order/${orderId}`);
+export async function fetchCustomerProducts(): Promise<any[]> {
+  return apiRequest<any[]>("/api/customer/products");
 }
 
-export async function fetchAnalytics() {
-  return apiRequest("/api/analytics");
+export async function fetchTrackingByOrderId(orderId: string): Promise<any> {
+  return apiRequest<any>(`/api/tracking/order/${orderId}`);
 }
 
-export async function fetchDashboardStats() {
-  return apiRequest("/api/stats");
+export async function fetchDeliveryByOrderId(orderId: string): Promise<any> {
+  return apiRequest<any>(`/api/delivery/order/${orderId}`);
+}
+
+export async function fetchAnalytics(): Promise<any> {
+  return apiRequest<any>("/api/analytics");
+}
+
+export async function fetchDashboardStats(): Promise<any> {
+  return apiRequest<any>("/api/stats");
 }
 
 /* =========================

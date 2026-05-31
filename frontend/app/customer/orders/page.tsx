@@ -1,9 +1,10 @@
-"use client"
-import { useEffect, useState } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Badge } from "@/components/ui/badge"
+"use client";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import {
   Table,
   TableBody,
@@ -11,56 +12,106 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
-import { Order } from "@/lib/mock-data"
-import { fetchOrders } from "@/lib/api"
-import { Search, Filter, Eye, Package, Truck, CheckCircle } from "lucide-react"
+} from "@/components/ui/table";
+import { fetchOrders } from "@/lib/api";
+import { Search, Filter, Eye, Package, Truck, CheckCircle } from "lucide-react";
+
+type CustomerOrder = {
+  id: string;
+  customer: string;
+  status: string;
+  amount: number;
+  date: string;
+};
 
 const statusConfig = {
-  delivered: { label: "Delivered", color: "bg-emerald-500/10 text-emerald-600", icon: CheckCircle },
-  shipped: { label: "Shipped", color: "bg-blue-500/10 text-blue-600", icon: Truck },
-  pending: { label: "Pending", color: "bg-amber-500/10 text-amber-600", icon: Package },
-}
+  delivered: {
+    label: "Delivered",
+    color: "bg-emerald-500/10 text-emerald-600",
+    icon: CheckCircle,
+  },
+  shipped: {
+    label: "Shipped",
+    color: "bg-blue-500/10 text-blue-600",
+    icon: Truck,
+  },
+  pending: {
+    label: "Pending",
+    color: "bg-amber-500/10 text-amber-600",
+    icon: Package,
+  },
+};
 
 export default function OrdersPage() {
-  const [orders, setOrders] = useState<Order[]>([])
-  const [searchQuery, setSearchQuery] = useState("")
-  const [statusFilter, setStatusFilter] = useState<string>("all")
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const [orders, setOrders] = useState<CustomerOrder[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
+
+  const normalizeOrder = (order: any, index: number): CustomerOrder => ({
+    id: String(order.id || order._id || order.orderId || `order-${index}`),
+    customer:
+      order.customer ||
+      order.customerName ||
+      order.customer_name ||
+      "Unknown customer",
+    status: order.status || "pending",
+    amount:
+      typeof order.amount === "number"
+        ? order.amount
+        : typeof order.totalPrice === "number"
+          ? order.totalPrice
+          : 0,
+    date:
+      order.date ||
+      order.createdAt ||
+      order.updatedAt ||
+      new Date().toISOString(),
+  });
 
   useEffect(() => {
     const loadOrders = async () => {
-      setLoading(true)
-      setError(null)
+      setLoading(true);
+      setError(null);
 
       try {
-        const ordersData = await fetchOrders()
-        setOrders(ordersData)
+        const ordersData = await fetchOrders();
+        const normalizedOrders = Array.isArray(ordersData)
+          ? ordersData.map(normalizeOrder)
+          : [];
+        setOrders(normalizedOrders);
       } catch (fetchError) {
-        setError(fetchError instanceof Error ? fetchError.message : "Failed to load orders")
+        setError(
+          fetchError instanceof Error
+            ? fetchError.message
+            : "Failed to load orders",
+        );
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
-    }
+    };
 
-    loadOrders()
-  }, [])
+    loadOrders();
+  }, []);
 
   const filteredOrders = orders.filter((order) => {
-    const matchesSearch = 
-      order.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      order.customer.toLowerCase().includes(searchQuery.toLowerCase())
-    const matchesStatus = statusFilter === "all" || order.status === statusFilter
-    return matchesSearch && matchesStatus
-  })
+    const query = searchQuery.toLowerCase();
+    const matchesSearch =
+      String(order.id).toLowerCase().includes(query) ||
+      String(order.customer).toLowerCase().includes(query);
+    const matchesStatus =
+      statusFilter === "all" || order.status === statusFilter;
+    return matchesSearch && matchesStatus;
+  });
 
   const orderStats = {
     total: orders.length,
-    delivered: orders.filter(o => o.status === "delivered").length,
-    shipped: orders.filter(o => o.status === "shipped").length,
-    pending: orders.filter(o => o.status === "pending").length,
-  }
+    delivered: orders.filter((o) => o.status === "delivered").length,
+    shipped: orders.filter((o) => o.status === "shipped").length,
+    pending: orders.filter((o) => o.status === "pending").length,
+  };
 
   return (
     <div className="space-y-6">
@@ -164,7 +215,9 @@ export default function OrdersPage() {
             </div>
           ) : error ? (
             <div className="flex flex-col items-center justify-center py-12">
-              <p className="text-lg font-medium text-foreground">Unable to load orders</p>
+              <p className="text-lg font-medium text-foreground">
+                Unable to load orders
+              </p>
               <p className="mt-1 text-sm text-muted-foreground">{error}</p>
             </div>
           ) : (
@@ -181,16 +234,31 @@ export default function OrdersPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredOrders.map((order) => {
-                    const status = statusConfig[order.status]
-                    const StatusIcon = status.icon
+                  {filteredOrders.map((order, index) => {
+                    const status = statusConfig[
+                      order.status as keyof typeof statusConfig
+                    ] || {
+                      label:
+                        order.status?.charAt(0).toUpperCase() +
+                          order.status?.slice(1) || "Unknown",
+                      color: "bg-slate-100 text-slate-700",
+                      icon: Package,
+                    };
+                    const StatusIcon = status.icon;
                     return (
-                      <TableRow key={order.id}>
-                        <TableCell className="font-medium">{order.id}</TableCell>
+                      <TableRow key={order.id || `order-${index}`}>
+                        <TableCell className="font-medium">
+                          {order.id}
+                        </TableCell>
                         <TableCell>{order.customer}</TableCell>
-                        <TableCell>{new Date(order.date).toLocaleDateString()}</TableCell>
                         <TableCell>
-                          <Badge className={`gap-1.5 ${status.color}`} variant="secondary">
+                          {new Date(order.date).toLocaleDateString()}
+                        </TableCell>
+                        <TableCell>
+                          <Badge
+                            className={`gap-1.5 ${status.color}`}
+                            variant="secondary"
+                          >
                             <StatusIcon className="h-3 w-3" />
                             {status.label}
                           </Badge>
@@ -199,19 +267,30 @@ export default function OrdersPage() {
                           ₹{order.amount.toLocaleString()}
                         </TableCell>
                         <TableCell className="text-right">
-                          <Button variant="ghost" size="sm" className="h-8 gap-1.5">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 gap-1.5"
+                            onClick={() =>
+                              router.push(
+                                `/customer/tracking?orderId=${order.id}`,
+                              )
+                            }
+                          >
                             <Eye className="h-4 w-4" />
                             View
                           </Button>
                         </TableCell>
                       </TableRow>
-                    )
+                    );
                   })}
                 </TableBody>
               </Table>
               {filteredOrders.length === 0 && (
                 <div className="flex flex-col items-center justify-center py-12">
-                  <p className="text-lg font-medium text-foreground">No orders found</p>
+                  <p className="text-lg font-medium text-foreground">
+                    No orders found
+                  </p>
                   <p className="mt-1 text-sm text-muted-foreground">
                     Try adjusting your search or filter criteria
                   </p>
@@ -222,5 +301,5 @@ export default function OrdersPage() {
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

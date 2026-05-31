@@ -1,47 +1,83 @@
-"use client"
+"use client";
 
-import Image from "next/image"
-import { useEffect, useState } from "react"
-import { Card, CardContent } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Badge } from "@/components/ui/badge"
-import { Product } from "@/lib/mock-data"
-import { fetchProducts } from "@/lib/api"
-import { Search, Filter, ShoppingCart, Heart } from "lucide-react"
+import Image from "next/image";
+import { useEffect, useState } from "react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Product } from "@/lib/mock-data";
+import { fetchProducts } from "@/lib/api";
+import { Search, Filter, ShoppingCart, Heart } from "lucide-react";
 
-const categories = ["All", "Audio", "Accessories", "Wearables", "Storage"]
+type NormalizedProduct = Product;
+
+const categories = ["All", "Audio", "Accessories", "Wearables", "Storage"];
 
 export default function ProductsPage() {
-  const [products, setProducts] = useState<Product[]>([])
-  const [searchQuery, setSearchQuery] = useState("")
-  const [selectedCategory, setSelectedCategory] = useState("All")
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const [products, setProducts] = useState<NormalizedProduct[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("All");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [cartItems, setCartItems] = useState<string[]>([]);
+
+  const normalizeProduct = (
+    product: any,
+    index: number,
+  ): NormalizedProduct => ({
+    id: String(product.id || product._id || `product-${index}`),
+    name: product.name || "Unnamed product",
+    price:
+      typeof product.price === "number"
+        ? product.price
+        : Number(product.price) || 0,
+    image:
+      product.image ||
+      (Array.isArray(product.images) && product.images[0]) ||
+      "/placeholder.png",
+    category: product.category || "General",
+  });
+
+  const handleAddToCart = (productId: string) => {
+    setCartItems((current) =>
+      current.includes(productId) ? current : [...current, productId],
+    );
+  };
 
   useEffect(() => {
     const loadProducts = async () => {
-      setLoading(true)
-      setError(null)
+      setLoading(true);
+      setError(null);
 
       try {
-        const productsData = await fetchProducts()
-        setProducts(productsData)
+        const productsData = await fetchProducts();
+        const normalizedProducts = Array.isArray(productsData)
+          ? productsData.map(normalizeProduct)
+          : [];
+        setProducts(normalizedProducts);
       } catch (fetchError) {
-        setError(fetchError instanceof Error ? fetchError.message : "Unable to load products")
+        setError(
+          fetchError instanceof Error
+            ? fetchError.message
+            : "Unable to load products",
+        );
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
-    }
+    };
 
-    loadProducts()
-  }, [])
+    loadProducts();
+  }, []);
 
   const filteredProducts = products.filter((product) => {
-    const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase())
-    const matchesCategory = selectedCategory === "All" || product.category === selectedCategory
-    return matchesSearch && matchesCategory
-  })
+    const matchesSearch = product.name
+      .toLowerCase()
+      .includes(searchQuery.toLowerCase());
+    const matchesCategory =
+      selectedCategory === "All" || product.category === selectedCategory;
+    return matchesSearch && matchesCategory;
+  });
 
   return (
     <div className="space-y-6">
@@ -87,12 +123,17 @@ export default function ProductsPage() {
           </div>
         ) : error ? (
           <div className="col-span-full flex flex-col items-center justify-center py-16">
-            <p className="text-lg font-medium text-foreground">Unable to load products</p>
+            <p className="text-lg font-medium text-foreground">
+              Unable to load products
+            </p>
             <p className="mt-1 text-sm text-muted-foreground">{error}</p>
           </div>
         ) : filteredProducts.length > 0 ? (
           filteredProducts.map((product) => (
-            <Card key={product.id} className="group overflow-hidden border-none shadow-sm transition-shadow hover:shadow-md">
+            <Card
+              key={product.id}
+              className="group overflow-hidden border-none shadow-sm transition-shadow hover:shadow-md"
+            >
               <CardContent className="p-0">
                 <div className="relative aspect-square overflow-hidden bg-zinc-900">
                   <Image
@@ -112,15 +153,24 @@ export default function ProductsPage() {
                   </Badge>
                 </div>
                 <div className="p-4">
-                  <h3 className="font-semibold text-foreground">{product.name}</h3>
-                  <p className="mt-1 text-sm text-muted-foreground">Premium quality product</p>
+                  <h3 className="font-semibold text-foreground">
+                    {product.name}
+                  </h3>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Premium quality product
+                  </p>
                   <div className="mt-4 flex items-center justify-between">
                     <span className="text-xl font-bold text-foreground">
                       ₹{product.price.toLocaleString()}
                     </span>
-                    <Button size="sm" className="gap-2">
+                    <Button
+                      size="sm"
+                      className="gap-2"
+                      onClick={() => handleAddToCart(product.id)}
+                      disabled={cartItems.includes(product.id)}
+                    >
                       <ShoppingCart className="h-4 w-4" />
-                      Add to Cart
+                      {cartItems.includes(product.id) ? "Added" : "Add to Cart"}
                     </Button>
                   </div>
                 </div>
@@ -129,7 +179,9 @@ export default function ProductsPage() {
           ))
         ) : (
           <div className="col-span-full flex flex-col items-center justify-center py-12">
-            <p className="text-lg font-medium text-foreground">No products found</p>
+            <p className="text-lg font-medium text-foreground">
+              No products found
+            </p>
             <p className="mt-1 text-sm text-muted-foreground">
               Try adjusting your search or filter criteria
             </p>
@@ -137,5 +189,5 @@ export default function ProductsPage() {
         )}
       </div>
     </div>
-  )
+  );
 }
