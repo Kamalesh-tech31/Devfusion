@@ -1,19 +1,26 @@
-import Link from "next/link"
-import { useState } from "react"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Mail } from "lucide-react"
+"use client";
+import Link from "next/link";
+import { useState } from "react";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Mail } from "lucide-react";
 
 export default function ForgotPasswordPage() {
-  const [email, setEmail] = useState("")
-  const [submitted, setSubmitted] = useState(false)
+  const [email, setEmail] = useState("");
+  const [submitted, setSubmitted] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    setSubmitted(true)
-  }
+    e.preventDefault();
+    setSubmitted(true);
+  };
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background p-4">
@@ -47,17 +54,21 @@ export default function ForgotPasswordPage() {
           </form>
           {submitted && (
             <p className="mt-4 text-sm text-muted-foreground">
-              If an account exists for <strong>{email}</strong>, a password reset link has been sent.
+              If an account exists for <strong>{email}</strong>, a password
+              reset link has been sent.
             </p>
           )}
           <p className="mt-6 text-center text-sm text-muted-foreground">
             Remembered your password?{" "}
-            <Link href="/login" className="font-medium text-primary hover:underline">
+            <Link
+              href="/login"
+              className="font-medium text-primary hover:underline"
+            >
               Sign in
             </Link>
           </p>
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }
