@@ -6,12 +6,12 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   children: React.ReactNode;
 }
 
-const Button = ({
+export function Button({
   children,
   className = "",
   type = "button",
   ...props
-}: ButtonProps) => {
+}: ButtonProps) {
   return (
     <button
       type={type}
@@ -38,6 +38,4 @@ const Button = ({
       {children}
     </button>
   );
-};
-
-export default Button;
+}

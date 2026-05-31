@@ -1,14 +1,21 @@
+"use client";
+
 interface InputProps {
   type?: string;
-  placeholder: string;
+  placeholder?: string;
+  className?: string;
 }
 
-export default function Input({ type = "text", placeholder }: InputProps) {
+export function Input({
+  type = "text",
+  placeholder,
+  className = "",
+}: InputProps) {
   return (
     <input
       type={type}
       placeholder={placeholder}
-      className="
+      className={`
         w-full
         bg-[#0B0B0B]
         border
@@ -21,7 +28,8 @@ export default function Input({ type = "text", placeholder }: InputProps) {
         text-white
         placeholder:text-neutral-500
         transition-all
-      "
+        ${className}
+      `}
     />
   );
 }
