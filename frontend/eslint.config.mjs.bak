@@ -1,0 +1,21 @@
+import { defineConfig } from "eslint/config";
+import nextPlugin from "@next/eslint-plugin-next";
+import tsPlugin from "@typescript-eslint/eslint-plugin";
+import coreWebVitals from "eslint-config-next/core-web-vitals.js";
+import typescript from "eslint-config-next/typescript.js";
+
+const eslintConfig = defineConfig([
+  {
+    root: true,
+    plugins: {
+      next: nextPlugin,
+      "@next/next": nextPlugin,
+      "@typescript-eslint": tsPlugin,
+    },
+    ignorePatterns: [".next/**", "out/**", "build/**", "next-env.d.ts"],
+  },
+  coreWebVitals,
+  typescript,
+]);
+
+export default eslintConfig;
